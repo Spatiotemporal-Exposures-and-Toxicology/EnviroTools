@@ -49,6 +49,6 @@ po/*~
 rsconnect/
 
 # data stored in input folder
-vignettes/input/
+input/
 
 #
