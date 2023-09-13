@@ -11,7 +11,7 @@ Environmental research relies on various types of spatial, temporal, and spatio-
 
 This vignette will introduce packages equipped to handle the various types of data often used in environmental research, will teach how to load/read each type of data into R, and how to perform simple/basic/primary analyses.
 
-This vignette utilizes several packages that may not be installed in [your current environment]. To begin, install all uninstalled packages and load [them] into the [current environment]
+This vignette utilizes several packages that may not be installed in \[your current environment\]. To begin, install all uninstalled packages and load \[them\] into the \[current environment\]
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
 # may require R to restart
@@ -666,11 +666,6 @@ plot(conus_t,
      add=TRUE)
 ```
 
-
-
-
-
-
 As mentioned earlier, we may be interested in calculating zonal/focal statistics based on polygons. For an example, let us identify which states (including the District of Columbia) are covered by wildfire smoke plumes
 
 ```{r}
@@ -690,13 +685,37 @@ conus_t <- cbind(conus_t,
 Create a series of plots depicting the presence absence of each type of smoke plume coverage in each state.
 
 ```{r}
-ggplot()+
-  geom_spatvector(data=conus_t)+
-  theme_pubr(legend="bottom")+
-  theme(axis.line.x = element_blank(), axis.line.y = element_blank(),
-        axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
-        axis.title = element_blank(), axis.text = element_blank())
+for(d in 1:length(dens)){
+
+  dens_variable <- noquote(as.character(dens[d]))
+
+  smoke_plot <-
+    ggplot()+
+      geom_spatvector(data=conus_t,
+                      aes_string(fill=dens_variable))+
+      scale_fill_manual(paste0(dens_variable,
+                               " Smoke Plume Coverage Present"),
+                        values=c("grey", "tomato"))+
+      theme_pubr(legend="right")+
+      theme(axis.line.x = element_blank(), axis.line.y = element_blank(),
+            axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+            axis.title = element_blank(), axis.text = element_blank())
+  
+  print(smoke_plot)
+
+}
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
