@@ -52,4 +52,4 @@ rsconnect/
 input/
 
 # extra files from mac
-/R/._*
+/R/*._*
