@@ -1,0 +1,187 @@
+---
+title: "Intro-Environmental-Spatial-Analysis-Notes"
+author: "Mitchell Manware"
+date: "2023-09-11"
+output: html_document
+---
+
+#### Notes/ideas for advanced vignettes
+##### Combining spatial data types
+```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
+# specify the URL where data is stored
+url2 <- "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
+
+# specify where to save downloaded data
+destination2 <- "/   YOUR FILE PATH   /states.zip"
+
+# download the data
+utils::download.file(url2, destination2)
+```
+
+```{r, include = FALSE, eval=FALSE}
+url2 <- "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
+destination2 <- "/Volumes/SET/Projects/EnviroTools/input/states.zip"
+utils::download.file(url2, destination2)
+```
+
+Once the file has finished downloading, open `states.zip` with `unzip()`.
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+utils::unzip("/   YOUR FILE PATH   /states.zip")
+```
+
+```{r, include=FALSE, eval=FALSE}
+utils::unzip("/Volumes/SET/Projects/EnviroTools/input/states.zip",
+             exdir = "/Volumes/SET/Projects/EnviroTools/input")
+```
+
+The boundary data downloaded from the census website is a shapefile. To load the data in, identify the file with `.shp` file type. For the data downloaded, this should be `cb_2018_us_state_500k.shp`.
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+list.files("/   YOUR FILE PATH   /")
+```
+
+```{r, echo=FALSE}
+list.files("/Volumes/SET/Projects/EnviroTools/input")
+```
+
+
+Import the data using the `sf` package with `sf::st_read()`. Notice that this is the same function used to import the `daily_88101_2021.csv` file. This time, however, the function does not return a `WARNING` because the shapefile is a spatially defined object.
+
+```{r, eval=FALSE}
+polygons <- sf::st_read("/   YOUR FILE PATH   /cb_2018_us_state_500k.hsp")
+```
+
+```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
+polygons <- 
+  sf::st_read("/Volumes/SET/Projects/EnviroTools/input/cb_2018_us_state_500k.shp")
+```
+
+Additionally, there is no need to perform the `sf::st_as_sf()` function because the polygons are already of a spatial data type. This can be check with `class()`.
+
+```{r}
+class(polygons)
+class(polygons$geometry)
+```
+
+It is still important, however, to check the Coordinate Reference System of the data.
+
+```{r}
+sf::st_crs(polygons)
+```
+
+In this case, the `polygons` data set already has a defined Coordinate Reference System. Check the visual extent of the polygons with `plot()`.
+
+```{r}
+plot(polygons$geometry,
+     axes=TRUE)
+```
+
+Although the data is spatially enabled, we can perform subset functions on the data frame if we are interested in a certain area of the entire data frame. For example, subset the data to only the states in New England and plot the new data.
+
+```{r}
+ne_states <- c("Connecticut", "Massachusetts", "Rhode Island",
+               "New Hampshire", "Vermont", "Maine")
+
+ne <- subset(polygons, subset=NAME %in% ne_states)
+
+plot(ne$geometry,
+     axes=TRUE)
+```
+
+The new plot shows the six states in New England with each of their individual borders. If we wanted to consider New England as one area, rather than a collection of six states, we can
+
+```{r}
+ne_1 <- sf::st_union(ne)
+```
+
+When plotting the merged data `ne_1`, there is no need to specify the `$geometry` because merging the `st_union` function has removed all of the state specific data.
+
+```{r}
+plot(ne_1,
+     axes=TRUE)
+```
+
+We can combine the two plots to show the differnece between the regional border and the state-specific borders.
+
+```{r}
+# run the entire chunk to overlay the plots
+plot(ne$geometry, border="red", axes=TRUE)
+plot(ne_1, border="black", axes=TRUE, add=TRUE)
+```
+
+When it comes to environmental health research, plotting state borders on their own is rather meaningless. Using the EPA PM~2.5~ monitoring location data set with the average annual measurement (`data_mean`), let us combine the functionality of point and polygon data types.
+
+First, let us select the boundaries and the monitoring locations in only the contiguous United States. We can do this by removing Alaska, Hawaii, and the United States' territories from the data.
+
+```{r}
+polygons_remove <- c("Alaska",
+                     "Hawaii",
+                     "Puerto Rico",
+                     "United States Virgin Islands",
+                     "Commonwealth of the Northern Mariana Islands",
+                     "Guam",
+                     "American Samoa")
+polygons_conus <- subset(polygons, subset=!NAME%in%polygons_remove)
+
+monitors_remove <- c("Alaska",
+                     "Hawaii",
+                     "Puerto Rico",
+                     "Virgin Islands",
+                     "Country of Mexico")
+monitors_conus <- subset(data_mean, subset=!State.Name%in%monitors_remove)
+```
+
+Then we must ensure that the two different spatial data data sets have the same coordinate reference system.
+
+```{r}
+sf::st_crs(monitors_conus) == sf::st_crs(polygons_conus)
+```
+
+The the test returned `FALSE`, indicating that the two data sets do not have the same coordinate reference system. To fix this, we can simply set the CRS of both the monitors and polygons to WGS:1984 (EPSG:4326).
+
+```{r}
+sf::st_crs(monitors_conus) <- 4326
+sf::st_crs(polygons_conus) <- 4326
+```
+
+Additionally, we can reproject the data in a projection that well represents our area of interest, the contiguous United States. We will use the USA Contiguous Albers Equal Area Conic projection to map the polygons.
+
+```{r}
+monitors_conus_proj <- sf::st_transform(monitors_conus, 5070)
+polygons_conus_proj <- sf::st_transform(polygons_conus, 5070)
+```
+
+```{r, message=FALSE, results='hide'}
+sf::st_crs(polygons_conus) <- 4326
+sf::st_crs(polygons_conus)
+plot(polygons_conus$geometry)
+
+test <- sf::st_transform(polygons_conus, 5070)
+sf::st_transform(test)
+plot(test$geometry)
+```
+
+Now that both data sets have the same coordinate reference system, plot the locations of the PM~2.5~ monitors on top of the United States' state boundaries.
+
+```{r}
+# run the entire chunk to overlay the plots
+plot(polygons_conus_proj$geometry, border="black")
+plot(monitors_conus_proj, col="blue", pch=20, add=TRUE)
+```
+
+Similar to the one created earlier, create a plot with `ggplot2` and `ggpubr` that depicts the monitor locations color coded by the annual mean PM~2.5~ concentration measurement. But this time, lets plot only the contiguous United States and add the state boundaries for more context in the map.
+
+```{r}
+ggplot()+
+  geom_sf(data=polygons_conus_proj, fill="white")+
+  geom_sf(data=monitors_conus_proj,
+          aes(color=Annual.Mean))+
+  scale_color_viridis_b(expression("PM"[2.5]*" Concentration (µg/m"^3*")"))+
+  ggtitle(expression("Average PM"[2.5]*
+                       " Measurement in the United States (2021)"))+
+  theme_pubr(legend="bottom")+
+  theme(axis.line.x = element_blank(), axis.line.y = element_blank(),
+        axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+        axis.title = element_blank(), axis.text = element_blank())
+```

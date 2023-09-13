@@ -1,0 +1,716 @@
+---
+title: "Intro-Environmental-Spatial-Analysis"
+author: Mitchell Manware, Kyle P Messier
+format: html
+editor: visual
+---
+
+## Introduction to Spatial Analysis with Environmental Data
+
+Environmental research relies on various types of spatial, temporal, and spatio-temporal data to accurately measure, predict, and model exposures.
+
+This vignette will introduce packages equipped to handle the various types of data often used in environmental research, will teach how to load/read each type of data into R, and how to perform simple/basic/primary analyses.
+
+This vignette utilizes several packages that may not be installed in [your current environment]. To begin, install all uninstalled packages and load [them] into the [current environment]
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+# may require R to restart
+vignette_packages <- c("sf","terra", "ggplot2", "ggpubr",
+                       "dplyr", "exactextractr", "sftime",
+                       "stars", "tidyterra")
+
+for(v in 1:length(vignette_packages)){
+  if (vignette_packages[v] %in% installed.packages() == FALSE){
+    install.packages(vignette_packages[v])
+  }
+}
+
+library(sf); library(terra); library(ggplot2); library(ggpubr);
+library(dplyr); library(exactextractr); library(sftime); library(stars);
+library(tidyterra)
+```
+
+### 1. Spatial Data
+
+Various types of spatial data are \[essential\] for conducting environmental health research. The most common forms of spatial data are point, polygon, and raster data types, \[each of which will be covered in this vignette.\]
+
+#### 1.1 Point Data
+
+The `sf` [package](https://cran.r-project.org/web/packages/sf/index.html) \[is designed to/allows users to\] create, access, manipulate, and analyze \[*simple features*\]. When working with spatial data, it is important to note that the point and polygon data types can be classified as *simple features*. A detailed description of \[what constitutes\] *simple features* and *simple feature data* is available on [1. Simple Features for R](https://r-spatial.github.io/sf/articles/sf1.html)(**Warning: this webpage links to an external cite**).
+
+To demonstrate **handling** point type data with `sf`, we will use PM~2.5~ monitoring data from 2021, obtained from the [United States Environmental Protection Agency's Pre-Generated Data Files](https://aqs.epa.gov/aqsweb/airdata/download_files.html). The data can be downloaded at <https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip>, or using the following code.
+
+```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
+# specify the URL where data is stored
+url_epa <- "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
+
+# specify where to save downloaded data
+destination_epa <- "/   YOUR FILE PATH   /epa_data.zip"
+
+# download the data
+download.file(url_epa,
+              destination_epa)
+```
+
+```{r, include = FALSE, eval=FALSE}
+###########################################
+## NEED TO CHANGE eval=TRUE for publication
+###########################################
+url_epa <- "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
+destination_epa <- "/Volumes/SET/Projects/EnviroTools/input/epa_data.zip"
+download.file(url_epa,
+              destination_epa)
+```
+
+Once the file has finished downloading, open `epa_data.zip` with `unzip()`.
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+unzip("/   YOUR FILE PATH   /epa_data.zip")
+```
+
+```{r, include=FALSE, eval=FALSE}
+###########################################
+## NEED TO CHANGE eval=TRUE for publication
+###########################################
+utils::unzip("/Volumes/SET/Projects/EnviroTools/input/epa_data.zip",
+             exdir = "/Volumes/SET/Projects/EnviroTools/input")
+```
+
+After the file has been unzipped, identify the name of the PM~2.5~ monitoring data and import the data set.
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+list.files("/   YOUR FILE PATH   /")
+```
+
+```{r, echo=FALSE}
+###########################################
+list.files("/Volumes/SET/Projects/EnviroTools/input")
+###########################################
+```
+
+```{r, eval=FALSE}
+pm <- st_read("/   YOUR FILE PATH   /daily_88101_2021.csv")
+```
+
+```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
+###########################################
+pm <- st_read("/Volumes/SET/Projects/EnviroTools/input/daily_88101_2021.csv")
+###########################################
+```
+
+Importing a `.csv` file with `sf::st_read()` may return a warning. This warning informs the user that the data does not contain a *simple feature* geometry, so the data was imported as a `data.frame`.
+
+It is important to inspect the data and see the data types of each column, especially the parameters of interest. The outcome of interest for these exploratory analyses is daily mean PM~2.5~ concentration measurement (`$Arithmetic.Mean`), and we will also need identification information for each monitor and measurement (`$State.Code`, `$County.Code`, `$Site.Num`, `$Latitude`, `$Longitude`, `State.Name`, and `$Date.Local`). To limit the processing time associated with a large data set, reduce the data to only the parameters of interest and inspect the data type of each.
+
+```{r}
+pm <- subset(pm, select=c(State.Code,
+                          County.Code,
+                          Site.Num,
+                          Latitude,
+                          Longitude,
+                          State.Name,
+                          Date.Local,
+                          Arithmetic.Mean))
+summary(pm)
+```
+
+The `summary()` function reveals that all variables in the `pm` data frame are of class character. As the goal of these exploratory analyses, and environmental research as a whole, require statistical and mathematical operations, the parameters of interest need to be changed/coerced into the proper data class. For these exploratory analyses, we will only need to change the `$Date.Local` and `$Arithmetic.Mean` parameters.
+
+```{r}
+pm$Date.Local <- as.Date(pm$Date.Local)
+pm$Arithmetic.Mean <- as.numeric(pm$Arithmetic.Mean)
+```
+
+Re-summarizing the data frame shows that these two parameters were successfully re classed.
+
+```{r}
+summary(pm)
+```
+
+Checking the class of the entire data set shows a different aspect of the data.
+
+```{r}
+class(pm)
+```
+
+A *simple feature* geometry can be created with `sf::st_as_sf()`. This function converts objects from *non-simple feature* data to *simple feature* data. In this case we are creating a `MULTIPOINT` containing each location at which PM~2.5~ observations were collected, so the `coords = c("Longitude", "Latitude")` argument specifies the column names that will be used to locate the points.
+
+```{r}
+pm_sf <- st_as_sf(pm,
+                  coords = c("Longitude", "Latitude"))
+```
+
+The `sf::st_as_sf()` function does not convert the entire `data.frame` to a spatial points object. Rather, it creates a new *simple feature* geometry and attaches it to the remaining data.
+
+```{r}
+class(pm_sf)
+```
+
+```{r}
+class(pm_sf$geometry)
+```
+
+***TEXT ABOUT COORDINATE REFERENCE SYSTEMS AND PROJECTION***
+
+```{r}
+st_crs(pm_sf)
+```
+
+The Coordinate Reference System of `pm_sf` is not defined. For this example, set the CRS of `pm_sf` to the World Geodesic System: 1984 (EPSG:4326).
+
+```{r}
+st_crs(pm_sf) <- "EPSG:4326"
+st_crs(pm_sf)
+```
+
+Now that the data has a defined Coordinate Reference System, look at the location of each of the air pollution monitors using `plot()`. When working with spatial data, visually assessing the data is important for **FINISH**. Set the `axes=` argument to `TRUE` in order to see the Latitude and Longitude markers associated with the points.
+
+```{r}
+plot(pm_sf$geometry,
+     axes=TRUE)
+```
+
+The outcome/parameter of interest for this exploratory analysis is the concentration of PM~2.5~ measured at each monitor location on various dates throughout year 2021. This data is stored in the column `$Arithmetic.Mean`. To visualize the distribution/variance/spread of these concentration measurements, create a histogram of the outcome of interest.
+
+Note: *For the previous plotting example, the `plot()` function from base R was used. This function is good for visual inspection of spatial data, but making plots with packages such as `ggplot2` and `ggpubr` is recommended for publication quality figures. Install and load the two packages if they are not already.*
+
+```{r}
+ggplot(data=pm_sf,
+       aes(Arithmetic.Mean))+
+  geom_histogram(binwidth = 5,
+                 fill="blue")+
+  ggtitle(expression("Frequency of PM"[2.5]*" Concentrations in the United States (2021)"))+
+  xlab(expression("PM"[2.5]*" Concentration (µg/m"^3*")"))+
+  ylab("Number of Observations (Daily)")+
+  theme_pubr()
+```
+
+Each air pollution monitor takes multiple measurements of PM~2.5~ concentrations each year. Some monitors daily, while others are less frequent. If we were interested in visualizing the average PM2.5 concentration measured at each station for the year 2021, we can summarize the data by station. First, create a unique identifier for each monitor by concatenating the `$State.Code`, `$County.Code`, and `$Site.Num` columns.
+
+```{r}
+pm_sf$Monitor.ID <- paste0(pm_sf$State.Code,
+                           pm_sf$County.Code,
+                           pm_sf$Site.Num)
+```
+
+As each monitor has a different Latitude and Longitude, the number of unique monitors should match the number of unique geographic locations. This can be tested with the following code.
+
+```{r}
+if ((length(unique(pm_sf$Monitor.ID)) == length(unique(pm_sf$geometry))) == TRUE){
+  print("Monitor IDs is equal to unique geometries")
+} else {
+  print("Something went wrong")
+}
+```
+
+Now that we have created a unique identifier for each monitor location we can calculate the average PM2.5 concentration measured by each station in the year 2021. This can be performed using syntax from the `dplyr` package.
+
+```{r, warning=FALSE, message=FALSE}
+pm_mean <-
+  pm_sf %>%
+  group_by(Monitor.ID, State.Name) %>%        # the data is grouped by `Monitor.ID`, but adding `State.Name` retains the column in the new data frame
+  summarise(Annual.Mean=mean(Arithmetic.Mean))
+```
+
+Create the plot.
+
+```{r}
+ggplot()+
+  geom_sf(data=pm_mean,
+          aes(color=Annual.Mean))+
+  scale_color_viridis_b(expression("PM"[2.5]*" Concentration (µg/m"^3*")"))+
+  ggtitle(expression("Average PM"[2.5]*" Measurement in the United States (2021)"))+
+  theme_pubr(legend="right")+
+  grids()
+```
+
+Visual inspection of this map shows there are multiple monitor locations in southern California that have annual PM~2.5~ concentrations in the highest category. If we wanted to inspect and compare the trends in PM~2.5~ concentration at the three highest monitors throughout the year, we could perform the following code. First, subset the original `data_sf` to the three monitors with the highest annual mean PM~2.5~ concentrations.
+
+```{r}
+max_monitors <-
+  pm_mean %>%
+  arrange(Annual.Mean) %>%
+  tail(n=3)
+
+max_monitors_id <- max_monitors$Monitor.ID
+
+pm_max <- subset(pm_sf,
+                 subset=Monitor.ID==max_monitors_id)
+```
+
+Then, plot all of the observations recorded by each station throughout year 2021.
+
+```{r}
+ggplot(data=pm_max,
+       aes(x=Date.Local,
+           y=Arithmetic.Mean,
+           group=Monitor.ID,
+           color=Monitor.ID))+
+  geom_line()+
+  ggtitle("EPA Monitoring Stations- Highest Annual Mean Concentration")+
+  facet_wrap(~Monitor.ID,
+             nrow = 3)+
+  ylab(expression("PM"[2.5]*" Concentration"))+
+  xlab("Date")+
+  theme_pubr(legend = "right")
+```
+
+# ============= BREAK ==============
+
+#### 1.2 Polygon Data
+
+The `sf` and `terra` packages are capable of handling polygon type data. To demonstrate how polygon type data is handled in each package, wildfire smoke plume coverage data from [NOAA's Hazard Mapping System Fire and Smoke Product](https://www.ospo.noaa.gov/Products/land/hms.html#maps). Historical smoke plume coverage data can be downloaded at <https://www.ospo.noaa.gov/Products/land/hms.html#0>, or with the following code.
+
+For these example example analyses, we will use wildfire smoke plume coverage data from September 1, 2023. To do so, first define variables for the day of the month, month of the year and year for which data is desired.
+
+```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide'}
+day = "01"
+month = "09"
+year = "2023"
+```
+
+```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
+# specify the URL where data is stored based on date variables of interest
+url_noaa <- paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/",
+                   year,
+                   "/",
+                   month,
+                   "/hms_smoke",
+                   year,
+                   month,
+                   day,
+                   ".zip")
+
+# specify where to save downloaded data
+destination_noaa <- paste0("/   YOUR FILE PATH   /noaa_smoke",
+                           year,
+                           month,
+                           day,
+                           ".zip")
+
+# download the data
+download.file(url_noaa,
+              destination_noaa)
+```
+
+```{r, include = FALSE, eval=FALSE}
+###########################################
+## NEED TO CHANGE eval=TRUE for publication
+###########################################
+url_noaa <- paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/",
+                   year,
+                   "/",
+                   month,
+                   "/hms_smoke",
+                   year,
+                   month,
+                   day,
+                   ".zip")
+destination_noaa <- paste0("/Volumes/SET/Projects/EnviroTools/input/noaa_smoke",
+                           year,
+                           month,
+                           day,
+                           ".zip")
+download.file(url_noaa, destination_noaa)
+```
+
+Once the file has finished downloading, open `noaa_20230901.zip` with `unzip()`.
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+unzip("/   YOUR FILE PATH   /noaa_smoke20230901.zip")
+```
+
+```{r, include=FALSE, eval=FALSE}
+###########################################
+## NEED TO CHANGE eval=TRUE for publication
+###########################################
+unzip("/Volumes/SET/Projects/EnviroTools/input/noaa_smoke20230901.zip",
+      exdir = "/Volumes/SET/Projects/EnviroTools/input")
+```
+
+The wildfire smoke plume coverage data is in a shapefile format. To load the data in, identify the file with the`.shp` file type. For the data downloaded, this should be `hms_smoke20230901.shp`.
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+list.files("/   YOUR FILE PATH   /")
+```
+
+```{r, echo=FALSE}
+###########################################
+list.files("/Volumes/SET/Projects/EnviroTools/input")
+###########################################
+```
+
+Now that the wildfire smoke plume coverage data has been downloaded locally, the `sf` and `terra` packages will be used \[separeately\] to import, manipluate, and analyze the data.
+
+##### 1.2.1 `sf` package
+
+Import the wildfire smoke plume data using the `sf` package with `sf::st_read()`. Notice that this function is the same function that was used to import the `daily_88101_2021.csv` file. This time, however, the function does not return a `WARNING` because the `.shp` file is a spatially defined object
+
+```{r, eval=FALSE}
+smoke <- st_read("/   YOUR FILE PATH   /hms_smoke20230901.shp")
+```
+
+```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
+###########################################
+smoke <- st_read("/Volumes/SET/Projects/EnviroTools/input/hms_smoke20230901.shp")
+###########################################
+```
+
+Additionally, there is no need to perform the `sf::st_as_sf()` function because the polygons are already of a spatial data type. This can be check with `class()`.
+
+```{r}
+class(smoke)
+class(smoke$geometry)
+```
+
+Inspect and summarize the wildfire smoke plume data.
+
+```{r}
+smoke
+summary(smoke)
+```
+
+Our parameter of interest in this data set is the smoke plume type, which is stored in the `$Density` column of the data.
+
+```{r}
+unique(smoke$Density)
+class(smoke$Density)
+```
+
+This data column is of character class, but for analysis purposes it needs to be re-classed as a factor with 3 levels for each density value (light, medium, heavy).
+
+```{r}
+smoke$Density <- factor(smoke$Density,
+                        levels=c("Light", "Medium", "Heavy"))
+```
+
+Inspecting the smoke data set reveals that there are three classifications for smoke plume density (light, medium, heavy), and that there are multiple polygons to depict each category of smoke density. Plot the data to visually inspect the polygons.
+
+```{r}
+plot(smoke$geometry,
+     col=c("lightgreen", "lightgoldenrod", "tomato"), # yellow=light, orange=medium, red=heavy
+     axes=TRUE,
+     graticule=TRUE)
+```
+
+The polygons are visible, but do not convey useful information about where the smoke plumes are located without the context of geographical or political borders. To contextualize the smoke plume coverage polygons, download and import the United States' state border data. As the state border data set is also a polygon data type, the downloading, unzipping, and importing steps will be the same as with the smoke polygons.
+
+```{r, eval=FALSE}
+# specify the URL where data is stored
+url_states <- "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
+
+# specify where to save downloaded data
+destination_states <- "/   YOUR FILE PATH   /states.zip"
+
+# download the data
+download.file(url_states,
+              destination_states)
+```
+
+```{r, include = FALSE, eval=FALSE}
+###########################################
+## NEED TO CHANGE eval=TRUE for publication
+###########################################
+url_states <- "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
+destination_states <- "/Volumes/SET/Projects/EnviroTools/input/states.zip"
+download.file(url_states,
+              destination_states)
+```
+
+Once the file has finished downloading, open `states.zip` with `unzip()`.
+
+```{r, eval=FALSE}
+unzip("/   YOUR FILE PATH   /states.zip")
+```
+
+```{r, include=FALSE, eval=FALSE}
+###########################################
+## NEED TO CHANGE eval=TRUE for publication
+###########################################
+unzip("/Volumes/SET/Projects/EnviroTools/input/states.zip",
+      exdir = "/Volumes/SET/Projects/EnviroTools/input")
+```
+
+The boundary data downloaded from the census website is a shapefile. To load the data in, identify the file with `.shp` file type. For the data downloaded, this should be `cb_2018_us_state_500k.shp`.
+
+```{r, eval=FALSE}
+list.files("/   YOUR FILE PATH   /")
+```
+
+```{r, echo=FALSE}
+###########################################
+list.files("/Volumes/SET/Projects/EnviroTools/input")
+###########################################
+```
+
+Import the state boundary data using the `sf` package with `sf::st_read()`.
+
+```{r, eval=FALSE}
+states <- st_read("/   YOUR FILE PATH   /cb_2018_us_state.shp")
+```
+
+```{r, include=FALSE}
+###########################################
+states <- st_read("/Volumes/SET/Projects/EnviroTools/input/cb_2018_us_state_500k.shp")
+###########################################
+```
+
+For the purposes of this example, we will only consider the contiguous United States.
+
+```{r}
+# define list of state and territories to be removed
+remove <- c("Alaska",
+            "Hawaii",
+            "Puerto Rico",
+            "United States Virgin Islands",
+            "Commonwealth of the Northern Mariana Islands",
+            "Guam",
+            "American Samoa")
+
+# remove states and territories
+conus <- subset(states,
+                !NAME %in% remove)
+```
+
+Plot the boundaries to inspect.
+
+```{r}
+plot(conus$geometry,
+     axes=TRUE)
+```
+
+Now that both the smoke polygons and the contiguous United States' borders are imported, it is important to ensure that both data sets have the same coordinate reference system. Check and/or set the coordinate reference system of an `sf` object with the `sf::st_crs()` function.
+
+```{r}
+st_crs(smoke) == st_crs(conus)
+```
+
+Checking the coordinate reference systems of each data set shows that they are different. Currently, the `smoke` data set has the WGS 1984 crs, while the conus boundary data is set to the NAD 1983. Set the crs of the smoke data set to match that of the boundary data set.
+
+```{r, warning=FALSE}
+st_crs(smoke) <- st_crs(conus)
+```
+
+In addition to changing the coordinate reference system of the data, changing the projection of the data more accurately \[maps/plots\] our area of interest. As we are dealing with the contiguous united states boundary, reproject both data sets to the Albers Equal Area projection (EPSG code: 5070).
+
+```{r}
+smoke <- st_transform(smoke,
+                      5070)
+conus <- st_transform(conus,
+                      5070)
+```
+
+With both data sets having the same coordinate reference system, plot them together using `ggplot2`.
+
+```{r}
+ggplot()+
+  geom_sf(data=smoke,
+          aes(fill=Density))+
+  scale_fill_manual("Smoke Density",
+                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
+  geom_sf(data=conus,
+          fill="transparent")+
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
+  theme_pubr(legend="bottom")+
+  theme(axis.line.x = element_blank(), axis.line.y = element_blank(),
+        axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+        axis.title = element_blank(), axis.text = element_blank())
+```
+
+Although the plot shows the distribution of each type of wildfire smoke plume, multiple polygons for each smoke plume density can be visually confusing due to the overlapping polygons with same fill color. As an exploratory analysis, create a single polygon for each smoke density level with the `sf::st_union` function.
+
+First, create a variable storing the three distinct smoke coverage categories
+
+```{r}
+dens <- unique(smoke$Density)
+```
+
+As with the annual mean pm2.5 data, `dplyr` syntax will be utilized to perform this function. **Note** This step loses the `$Satellite`, `$Start`, and `$End` columns and data from the data set. Only the Density type and are retained, so a new column with the date of interest needs to be created.
+
+```{r}
+smoke_density <-
+  smoke %>%
+  group_by(Density) %>%
+  summarise(geometry=st_union(geometry),
+            Date=paste0(year,
+                        month,
+                        day))
+```
+
+Re-create the plot of the smoke plume coverage distribution over the United States using the single polygons for each smoke density category.
+
+```{r}
+ggplot()+
+  geom_sf(data=smoke_density,
+          aes(fill=Density))+
+  scale_fill_manual("Smoke Density",
+                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
+  geom_sf(data=conus,
+          fill="transparent")+
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
+  theme_pubr(legend="bottom")+
+  theme(axis.line.x = element_blank(), axis.line.y = element_blank(),
+        axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+        axis.title = element_blank(), axis.text = element_blank())
+```
+
+Visual inspection of the plots we created shows that the wildfire smoke data extends beyond just the United States boundary. If we are interested in only the smoke plumes over the United States, we can \[crop/clip\] the smoke plume polygons to the bounding box of the contiguous United States boundary with `sf::st_crop`.
+
+```{r, warning=FALSE}
+smoke_crop <- st_crop(smoke_density,
+                      conus)
+```
+
+Plot the smoke coverage data cropped to the bounding box of the contiguous United States.
+
+```{r}
+ggplot()+
+  geom_sf(data=smoke_crop,
+          aes(fill=Density))+
+  scale_fill_manual("Smoke Density",
+                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
+  geom_sf(data=conus,
+          fill="transparent")+
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
+  theme_pubr(legend="bottom")+
+  theme(axis.line.x = element_blank(), axis.line.y = element_blank(),
+        axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+        axis.title = element_blank(), axis.text = element_blank())
+```
+
+# ============= BREAK ==============
+
+Now that we see the wildfire smoke data in the context of the United States boundary, we may be interested in state-specfic coverage rather than the country as a whole. To perform these analyses, we will need to utilize the `terra` and `exactextractr` packages.
+
+##### 1.2.2 `terra` package
+
+The `terra` package is capable of handling point and polygon data, as well as raster data, which will be covered in the next chapter.
+
+To begin, we will re-import the `hms_smoke20230901.shp` and `cb_2018_us_state_500k.shp` shape files with `terra::vect` (`_t` indicates data imported with terra). The steps to download, unzip, and identify the file of interest are identical and will not be repeated.
+
+```{r, eval=FALSE}
+smoke_t <- vect("/   YOUR FILE PATH   /hms_smoke20230901.shp")
+states_t <- vect("/   YOUR FILE PATH   /cb_2018_us_state_500k.shp")
+```
+
+```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
+###########################################
+smoke_t <- vect("/Volumes/SET/Projects/EnviroTools/input/hms_smoke20230901.shp")
+states_t <- vect("/Volumes/SET/Projects/EnviroTools/input/cb_2018_us_state_500k.shp")
+###########################################
+```
+
+When importing the data with `terra:vect()`, you will notice that the data has a different class and structure. Inspect the data.
+
+```{r}
+class(smoke_t); summary(smoke_t)
+class(states_t); summary(states_t)
+```
+
+The data remains the same, but the data is now of class `SpatVector` (spatial vector).
+
+Before performing analyses, must re-prepare the data by converting `smoke_t$Density` to a factor, subsetting `states_t` to only the contiguous United States, and ensuring the coordinate reference systems and projects are both set. As this was performed before, it will be executed again but not explained in detail.
+
+```{r}
+smoke_t$Density <- factor(smoke_t$Density,
+                          levels=c("Light", "Medium", "Heavy"))
+
+conus_t <- subset(states_t,
+                  !states_t$NAME %in% remove)
+
+crs(smoke_t) <- crs(conus_t)
+
+smoke_t <- project(smoke_t,
+                   "EPSG:5070")
+conus_t <- project(conus_t,
+                   "EPSG:5070")
+```
+
+Create a simple plot depicting botht the smoke plumes and state boundaries, but this time in their `SpatVector` formats.
+
+```{r}
+plot(smoke_t,
+     col=c("lightgreen", "lightgoldenrod", "tomato"))
+plot(conus_t,
+     add=TRUE)
+```
+
+As with the `sf` data, we need to summarize the multiple separate polygons into a single polygon for each density type. The `terra::aggregate()` function serves this purpose
+
+First, ensure the `dens` variable is still defined with each of the smoke density classifications. If it is not, scroll to section 1.2.1 and rexectute the code.
+
+```{r}
+dens
+```
+
+Next, execute the function to combine the geometries of each polygon by Density type. **Note** For some functions with common names across different packages, the package may need to be specified before the function (ie. terra::aggregate() instead of aggregate()).
+
+```{r}
+smoke_density_t <- terra::aggregate(smoke_t,
+                                    by="Density",
+                                    dissolve=TRUE)
+```
+
+The resulting `smoke_density_t` should be a SpatVector with 3 geometries. The number of individual polygons for each smoke density type is saved under `$agg_n`.
+
+```{r}
+smoke_density_t
+```
+
+Plot the SpatVector polygons with the conus boundary
+
+```{r}
+plot(smoke_density_t,
+     col=c("lightgreen", "lightgoldenrod", "tomato"))
+plot(conus_t,
+     add=TRUE)
+```
+
+
+
+
+
+
+As mentioned earlier, we may be interested in calculating zonal/focal statistics based on polygons. For an example, let us identify which states (including the District of Columbia) are covered by wildfire smoke plumes
+
+```{r}
+conus_smoke <- data.frame(t(relate(smoke_density_t,
+                                   conus_t,
+                                   relation="intersects")))
+colnames(conus_smoke) <- c("Light", "Medium", "Heavy")
+```
+
+Combine the newly created columns identifying smoke plume coverage with the SpatVector object `conus_t`.
+
+```{r}
+conus_t <- cbind(conus_t,
+                 conus_smoke)
+```
+
+Create a series of plots depicting the presence absence of each type of smoke plume coverage in each state.
+
+```{r}
+ggplot()+
+  geom_spatvector(data=conus_t)+
+  theme_pubr(legend="bottom")+
+  theme(axis.line.x = element_blank(), axis.line.y = element_blank(),
+        axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+        axis.title = element_blank(), axis.text = element_blank())
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# ============= BREAK ==============
+
+#### 1.3 Raster Data
+
+##### 1.3.1 `terra`

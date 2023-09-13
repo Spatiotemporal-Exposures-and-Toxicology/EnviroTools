@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Mitchell Manware, Kyle P Messier">
+
+<title>Intro-Environmental-Spatial-Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="Intro-Envr-Spatial_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Intro-Envr-Spatial_files/libs/quarto-html/quarto.js"></script>
+<script src="Intro-Envr-Spatial_files/libs/quarto-html/popper.min.js"></script>
+<script src="Intro-Envr-Spatial_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Intro-Envr-Spatial_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Intro-Envr-Spatial_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Intro-Envr-Spatial_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Intro-Envr-Spatial_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Intro-Envr-Spatial_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Intro-Envr-Spatial_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Intro-Environmental-Spatial-Analysis</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Mitchell Manware, Kyle P Messier </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="introduction-to-spatial-analysis-with-environmental-data" class="level2">
+<h2 class="anchored" data-anchor-id="introduction-to-spatial-analysis-with-environmental-data">Introduction to Spatial Analysis with Environmental Data</h2>
+<p>Environmental research relies on various types of spatial, temporal, and spatio-temporal data to accurately measure, predict, and model exposures.</p>
+<p>This vignette will introduce packages equipped to handle the various types of data often used in environmental research, will teach how to load/read each type of data into R, and how to perform simple/basic/primary analyses.</p>
+<p>This vignette utilizes several packages that may not be installed in [your current environment]. To begin, install all uninstalled packages and load [them] into the [current environment]</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># may require R to restart</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>vignette_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"sf"</span>,<span class="st">"terra"</span>, <span class="st">"ggplot2"</span>, <span class="st">"ggpubr"</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"dplyr"</span>, <span class="st">"sftime"</span>, <span class="st">"stars"</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(v <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(vignette_packages)){</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (vignette_packages[v] <span class="sc">%in%</span> <span class="fu">installed.packages</span>() <span class="sc">==</span> <span class="cn">FALSE</span>){</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">install.packages</span>(vignette_packages[v])</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf); <span class="fu">library</span>(sftime); <span class="fu">library</span>(stars); <span class="fu">library</span>(terra);</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr); <span class="fu">library</span>(ggplot2); <span class="fu">library</span>(ggpubr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="spatial-data" class="level3">
+<h3 class="anchored" data-anchor-id="spatial-data">1. Spatial Data</h3>
+<p>Various types of spatial data are [essential] for conducting environmental health research. The most common forms of spatial data are point, polygon, and raster data types, [each of which will be covered in this vignette.]</p>
+<section id="point-data" class="level4">
+<h4 class="anchored" data-anchor-id="point-data">1.1 Point Data</h4>
+<p>The <code>sf</code> <a href="https://cran.r-project.org/web/packages/sf/index.html">package</a> [is designed to/allows users to] create, access, manipulate, and analyze [<em>simple features</em>]. When working with spatial data, it is important to note that the point and polygon data types can be classified as <em>simple features</em>. A detailed description of [what constitutes] <em>simple features</em> and <em>simple feature data</em> is available on <a href="https://r-spatial.github.io/sf/articles/sf1.html">1. Simple Features for R</a>(<strong>Warning: this webpage links to an external cite</strong>).</p>
+<p>To demonstrate <strong>handling</strong> point type data with <code>sf</code>, we will use PM<sub>2.5</sub> monitoring data from 2021, obtained from the <a href="https://aqs.epa.gov/aqsweb/airdata/download_files.html">United States Environmental Protection Agency’s Pre-Generated Data Files</a>. The data can be downloaded at <a href="https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip" class="uri">https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip</a>, or using the following code.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># specify the URL where data is stored</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>url_epa <span class="ot">&lt;-</span> <span class="st">"https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specify where to save downloaded data</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>destination_epa <span class="ot">&lt;-</span> <span class="st">"/   YOUR FILE PATH   /epa_data.zip"</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># download the data</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url_epa,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>              destination_epa)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Once the file has finished downloading, open <code>epa_data.zip</code> with <code>unzip()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span>(<span class="st">"/   YOUR FILE PATH   /epa_data.zip"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>After the file has been unzipped, identify the name of the PM<sub>2.5</sub> monitoring data and import the data set.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list.files</span>(<span class="st">"/   YOUR FILE PATH   /"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "cb_2018_us_state_500k.cpg"           
+ [2] "cb_2018_us_state_500k.dbf"           
+ [3] "cb_2018_us_state_500k.prj"           
+ [4] "cb_2018_us_state_500k.shp"           
+ [5] "cb_2018_us_state_500k.shp.ea.iso.xml"
+ [6] "cb_2018_us_state_500k.shp.iso.xml"   
+ [7] "cb_2018_us_state_500k.shx"           
+ [8] "daily_88101_2021.csv"                
+ [9] "epa_data.zip"                        
+[10] "hms_smoke20230901.dbf"               
+[11] "hms_smoke20230901.prj"               
+[12] "hms_smoke20230901.shp"               
+[13] "hms_smoke20230901.shx"               
+[14] "noaa_smoke20230901.zip"              
+[15] "states.zip"                          </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>pm <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"/   YOUR FILE PATH   /daily_88101_2021.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-hash="Intro-Envr-Spatial_cache/html/unnamed-chunk-9_0cec62fbb0a1051dae1937d3dc32e2b7">
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: no simple feature geometries present: returning a data.frame or tbl_df</code></pre>
+</div>
+</div>
+<p>Importing a <code>.csv</code> file with <code>sf::st_read()</code> may return a warning. This warning informs the user that the data does not contain a <em>simple feature</em> geometry, so the data was imported as a <code>data.frame</code>.</p>
+<p>It is important to inspect the data and see the data types of each column, especially the parameters of interest. The outcome of interest for these exploratory analyses is daily mean PM<sub>2.5</sub> concentration measurement (<code>$Arithmetic.Mean</code>), and we will also need identification information for each monitor and measurement (<code>$State.Code</code>, <code>$County.Code</code>, <code>$Site.Num</code>, <code>$Latitude</code>, <code>$Longitude</code>, <code>State.Name</code>, and <code>$Date.Local</code>). To limit the processing time associated with a large data set, reduce the data to only the parameters of interest and inspect the data type of each.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>pm <span class="ot">&lt;-</span> <span class="fu">subset</span>(pm, <span class="at">select=</span><span class="fu">c</span>(State.Code,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                          County.Code,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                          Site.Num,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                          Latitude,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                          Longitude,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                          State.Name,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                          Date.Local,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                          Arithmetic.Mean))</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(pm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  State.Code        County.Code          Site.Num           Latitude        
+ Length:590208      Length:590208      Length:590208      Length:590208     
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+  Longitude          State.Name         Date.Local        Arithmetic.Mean   
+ Length:590208      Length:590208      Length:590208      Length:590208     
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  </code></pre>
+</div>
+</div>
+<p>The <code>summary()</code> function reveals that all variables in the <code>pm</code> data frame are of class character. As the goal of these exploratory analyses, and environmental research as a whole, require statistical and mathematical operations, the parameters of interest need to be changed/coerced into the proper data class. For these exploratory analyses, we will only need to change the <code>$Date.Local</code> and <code>$Arithmetic.Mean</code> parameters.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>pm<span class="sc">$</span>Date.Local <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(pm<span class="sc">$</span>Date.Local)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>pm<span class="sc">$</span>Arithmetic.Mean <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(pm<span class="sc">$</span>Arithmetic.Mean)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Re-summarizing the data frame shows that these two parameters were successfully re classed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(pm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  State.Code        County.Code          Site.Num           Latitude        
+ Length:590208      Length:590208      Length:590208      Length:590208     
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+  Longitude          State.Name          Date.Local         Arithmetic.Mean  
+ Length:590208      Length:590208      Min.   :2021-01-01   Min.   : -6.500  
+ Class :character   Class :character   1st Qu.:2021-04-04   1st Qu.:  4.700  
+ Mode  :character   Mode  :character   Median :2021-07-05   Median :  7.100  
+                                       Mean   :2021-07-03   Mean   :  8.615  
+                                       3rd Qu.:2021-10-03   3rd Qu.: 10.500  
+                                       Max.   :2021-12-31   Max.   :556.778  </code></pre>
+</div>
+</div>
+<p>Checking the class of the entire data set shows a different aspect of the data.</p>
+<p>A <em>simple feature</em> geometry can be created with <code>sf::st_as_sf()</code>. This function converts objects from <em>non-simple feature</em> data to <em>simple feature</em> data. In this case we are creating a <code>MULTIPOINT</code> containing each location at which PM<sub>2.5</sub> observations were collected, so the <code>coords = c("Longitude", "Latitude")</code> argument specifies the column names that will be used to locate the points.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>pm_sf <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(pm,</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"Longitude"</span>, <span class="st">"Latitude"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <code>sf::st_as_sf()</code> function does not convert the entire <code>data.frame</code> to a spatial points object. Rather, it creates a new <em>simple feature</em> geometry and attaches it to the remaining data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(pm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "sf"         "data.frame"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(pm_sf<span class="sc">$</span>geometry)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "sfc_POINT" "sfc"      </code></pre>
+</div>
+</div>
+<p><strong><em>TEXT ABOUT COORDINATE REFERENCE SYSTEMS AND PROJECTION</em></strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(pm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System: NA</code></pre>
+</div>
+</div>
+<p>The Coordinate Reference System of <code>pm_sf</code> is not defined. For this example, set the CRS of <code>pm_sf</code> to the World Geodesic System: 1984 (EPSG:4326).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(pm_sf) <span class="ot">&lt;-</span> <span class="st">"EPSG:4326"</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(pm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System:
+  User input: EPSG:4326 
+  wkt:
+GEOGCRS["WGS 84",
+    ENSEMBLE["World Geodetic System 1984 ensemble",
+        MEMBER["World Geodetic System 1984 (Transit)"],
+        MEMBER["World Geodetic System 1984 (G730)"],
+        MEMBER["World Geodetic System 1984 (G873)"],
+        MEMBER["World Geodetic System 1984 (G1150)"],
+        MEMBER["World Geodetic System 1984 (G1674)"],
+        MEMBER["World Geodetic System 1984 (G1762)"],
+        MEMBER["World Geodetic System 1984 (G2139)"],
+        ELLIPSOID["WGS 84",6378137,298.257223563,
+            LENGTHUNIT["metre",1]],
+        ENSEMBLEACCURACY[2.0]],
+    PRIMEM["Greenwich",0,
+        ANGLEUNIT["degree",0.0174532925199433]],
+    CS[ellipsoidal,2],
+        AXIS["geodetic latitude (Lat)",north,
+            ORDER[1],
+            ANGLEUNIT["degree",0.0174532925199433]],
+        AXIS["geodetic longitude (Lon)",east,
+            ORDER[2],
+            ANGLEUNIT["degree",0.0174532925199433]],
+    USAGE[
+        SCOPE["Horizontal component of 3D system."],
+        AREA["World."],
+        BBOX[-90,-180,90,180]],
+    ID["EPSG",4326]]</code></pre>
+</div>
+</div>
+<p>Now that the data has a defined Coordinate Reference System, look at the location of each of the air pollution monitors using <code>plot()</code>. When working with spatial data, visually assessing the data is important for <strong>FINISH</strong>. Set the <code>axes=</code> argument to <code>TRUE</code> in order to see the Latitude and Longitude markers associated with the points.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pm_sf<span class="sc">$</span>geometry,</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Intro-Envr-Spatial_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The outcome/parameter of interest for this exploratory analysis is the concentration of PM<sub>2.5</sub> measured at each monitor location on various dates throughout year 2021. This data is stored in the column <code>$Arithmetic.Mean</code>. To visualize the distribution/variance/spread of these concentration measurements, create a histogram of the outcome of interest.</p>
+<p>Note: <em>For the previous plotting example, the <code>plot()</code> function from base R was used. This function is good for visual inspection of spatial data, but making plots with packages such as <code>ggplot2</code> and <code>ggpubr</code> is recommended for publication quality figures. Install and load the two packages if they are not already.</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pm_sf, <span class="fu">aes</span>(Arithmetic.Mean))<span class="sc">+</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">5</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">fill=</span><span class="st">"blue"</span>)<span class="sc">+</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">expression</span>(<span class="st">"Frequency of PM"</span>[<span class="fl">2.5</span>]<span class="sc">*</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                       <span class="st">" Concentrations in the United States (2021)"</span>))<span class="sc">+</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">expression</span>(<span class="st">"PM"</span>[<span class="fl">2.5</span>]<span class="sc">*</span><span class="st">" Concentration (µg/m"</span><span class="sc">^</span><span class="dv">3</span><span class="sc">*</span><span class="st">")"</span>))<span class="sc">+</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Number of Observations (Daily)"</span>)<span class="sc">+</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_pubr</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Intro-Envr-Spatial_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Each air pollution monitor takes multiple measurements of PM<sub>2.5</sub> concentrations each year. Some monitors daily, while others are less frequent. If we were interested in visualizing the average PM2.5 concentration measured at each station for the year 2021, we can summarize the data by station. First, create a unique identifier for each monitor by concatenating the <code>$State.Code</code>, <code>$County.Code</code>, and <code>$Site.Num</code> columns.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>pm_sf<span class="sc">$</span>Monitor.ID <span class="ot">&lt;-</span> <span class="fu">paste0</span>(pm_sf<span class="sc">$</span>State.Code,</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                           pm_sf<span class="sc">$</span>County.Code,</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                           pm_sf<span class="sc">$</span>Site.Num)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As each monitor has a different Latitude and Longitude, the number of unique monitors should match the number of unique geographic locations. This can be tested with the following code.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> ((<span class="fu">length</span>(<span class="fu">unique</span>(pm_sf<span class="sc">$</span>Monitor.ID)) <span class="sc">==</span> <span class="fu">length</span>(<span class="fu">unique</span>(pm_sf<span class="sc">$</span>geometry))) <span class="sc">==</span> <span class="cn">TRUE</span>){</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">"Monitor IDs is equal to unique geometries"</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">"Something went wrong"</span>)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Monitor IDs is equal to unique geometries"</code></pre>
+</div>
+</div>
+<p>Now that we have created a unique identifier for each monitor location we can calculate the average PM2.5 concentration measured by each station in the year 2021. This can be performed using syntax from the <code>dplyr</code> package.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>pm_mean <span class="ot">&lt;-</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  pm_sf <span class="sc">%&gt;%</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Monitor.ID, State.Name) <span class="sc">%&gt;%</span>        <span class="co"># the data is grouped by `Monitor.ID`, but adding `State.Name` retains the column in the new data frame</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">Annual.Mean=</span><span class="fu">mean</span>(Arithmetic.Mean))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'Monitor.ID'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+</div>
+<p>Create the plot.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>()<span class="sc">+</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data=</span>pm_mean,</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>          <span class="fu">aes</span>(<span class="at">color=</span>Annual.Mean))<span class="sc">+</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_viridis_b</span>(<span class="fu">expression</span>(<span class="st">"PM"</span>[<span class="fl">2.5</span>]<span class="sc">*</span><span class="st">" Concentration (µg/m"</span><span class="sc">^</span><span class="dv">3</span><span class="sc">*</span><span class="st">")"</span>))<span class="sc">+</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">expression</span>(<span class="st">"Average PM"</span>[<span class="fl">2.5</span>]<span class="sc">*</span><span class="st">" Measurement in the United States (2021)"</span>))<span class="sc">+</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_pubr</span>(<span class="at">legend=</span><span class="st">"right"</span>)<span class="sc">+</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grids</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Intro-Envr-Spatial_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Visual inspection of this map shows there are multiple monitor locations in southern California that have annual PM<sub>2.5</sub> concentrations in the highest category. If we wanted to inspect and compare the trends in PM<sub>2.5</sub> concentration at the three highest monitors throughout the year, we could perform the following code. First, subset the original <code>data_sf</code> to the three monitors with the highest annual mean PM<sub>2.5</sub> concentrations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>max_monitors <span class="ot">&lt;-</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  pm_mean <span class="sc">%&gt;%</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(Annual.Mean) <span class="sc">%&gt;%</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tail</span>(<span class="at">n=</span><span class="dv">3</span>)</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>max_monitors_id <span class="ot">&lt;-</span> max_monitors<span class="sc">$</span>Monitor.ID</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>pm_max <span class="ot">&lt;-</span> <span class="fu">subset</span>(pm_sf,</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">subset=</span>Monitor.ID<span class="sc">==</span>max_monitors_id)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Then, plot all of the observations recorded by each station throughout year 2021.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pm_max,</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x=</span>Date.Local,</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">y=</span>Arithmetic.Mean,</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">group=</span>Monitor.ID,</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>Monitor.ID))<span class="sc">+</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()<span class="sc">+</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"EPA Monitoring Stations- Highest Annual Mean Concentration"</span>)<span class="sc">+</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>Monitor.ID,</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">nrow =</span> <span class="dv">3</span>)<span class="sc">+</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="st">"PM"</span>[<span class="fl">2.5</span>]<span class="sc">*</span><span class="st">" Concentration"</span>))<span class="sc">+</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Date"</span>)<span class="sc">+</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_pubr</span>(<span class="at">legend =</span> <span class="st">"right"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Intro-Envr-Spatial_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="break" class="level1">
+<h1>============= BREAK ==============</h1>
+<section id="polygon-data" class="level4">
+<h4 class="anchored" data-anchor-id="polygon-data">1.2 Polygon Data</h4>
+<p>The <code>sf</code> and <code>terra</code> packages are capable of handling polygon type data. To demonstrate how polygon type data is handled in each package, wildfire smoke plume coverage data from <a href="https://www.ospo.noaa.gov/Products/land/hms.html#maps">NOAA’s Hazard Mapping System Fire and Smoke Product</a>. Historical smoke plume coverage data can be downloaded at <a href="https://www.ospo.noaa.gov/Products/land/hms.html#0" class="uri">https://www.ospo.noaa.gov/Products/land/hms.html#0</a>, or with the following code.</p>
+<p>For these example example analyses, we will use wildfire smoke plume coverage data from September 1, 2023. To do so, first define variables for the day of the month, month of the year and year for which data is desired.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># specify the date of interest by creating variables for the day, month and year</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>day <span class="ot">=</span> <span class="st">"01"</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>month <span class="ot">=</span> <span class="st">"09"</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>year <span class="ot">=</span> <span class="st">"2023"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># specify the URL where data is stored based on date variables of interest</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>url_noaa <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/"</span>,</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>                   year,</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"/"</span>,</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>                   month,</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"/hms_smoke"</span>,</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>                   year,</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>                   month,</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>                   day,</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>                   <span class="st">".zip"</span>)</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="co"># specify where to save downloaded data</span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>destination_noaa <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"/   YOUR FILE PATH   /noaa_smoke"</span>,</span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>                           year,</span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>                           month,</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>                           day,</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>                           <span class="st">".zip"</span>)</span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a><span class="co"># download the data</span></span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url_noaa,</span>
+<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a>              destination_noaa)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Once the file has finished downloading, open <code>noaa_20230901.zip</code> with <code>unzip()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span>(<span class="st">"/   YOUR FILE PATH   /noaa_smoke20230901.zip"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The wildfire smoke plume coverage data is in a shapefile format. To load the data in, identify the file with the<code>.shp</code> file type. For the data downloaded, this should be <code>hms_smoke20230901.shp</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list.files</span>(<span class="st">"/   YOUR FILE PATH   /"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "cb_2018_us_state_500k.cpg"           
+ [2] "cb_2018_us_state_500k.dbf"           
+ [3] "cb_2018_us_state_500k.prj"           
+ [4] "cb_2018_us_state_500k.shp"           
+ [5] "cb_2018_us_state_500k.shp.ea.iso.xml"
+ [6] "cb_2018_us_state_500k.shp.iso.xml"   
+ [7] "cb_2018_us_state_500k.shx"           
+ [8] "daily_88101_2021.csv"                
+ [9] "epa_data.zip"                        
+[10] "hms_smoke20230901.dbf"               
+[11] "hms_smoke20230901.prj"               
+[12] "hms_smoke20230901.shp"               
+[13] "hms_smoke20230901.shx"               
+[14] "noaa_smoke20230901.zip"              
+[15] "states.zip"                          </code></pre>
+</div>
+</div>
+<p>Now that the wildfire smoke plume coverage data has been downloaded locally, the <code>sf</code> and <code>terra</code> packages will be used [separeately] to import, manipluate, and analyze the data.</p>
+<section id="sf-package" class="level5">
+<h5 class="anchored" data-anchor-id="sf-package">1.2.1 <code>sf</code> package</h5>
+<p>Import the wildfire smoke plume data using the <code>sf</code> package with <code>sf::st_read()</code>. Notice that this function is the same function that was used to import the <code>daily_88101_2021.csv</code> file. This time, however, the function does not return a <code>WARNING</code> because the <code>.shp</code> file is a spatially defined object</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>smoke <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"/   YOUR FILE PATH   /hms_smoke20230901.shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Additionally, there is no need to perform the <code>sf::st_as_sf()</code> function because the polygons are already of a spatial data type. This can be check with <code>class()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(smoke)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "sf"         "data.frame"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(smoke<span class="sc">$</span>geometry)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "sfc_POLYGON" "sfc"        </code></pre>
+</div>
+</div>
+<p>Inspect and summarize the wildfire smoke plume data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>smoke</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 58 features and 4 fields
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: -149.8003 ymin: 13.58187 xmax: -13.8847 ymax: 75.17942
+Geodetic CRS:  WGS 84
+First 10 features:
+   Satellite        Start          End Density                       geometry
+1  GOES-EAST 2023244 0900 2023244 1300   Light POLYGON ((-51.44147 45.2554...
+2  GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-91.82773 36.0791...
+3  GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-97.64288 36.1634...
+4  GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-123.9183 42.0795...
+5  GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-125.6769 49.7140...
+6  GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-129.6079 59.7177...
+7  GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-128.1527 59.2869...
+8  GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-115.297 59.41293...
+9  GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-120.85 58.51653,...
+10 GOES-EAST 2023244 1300 2023244 1700   Light POLYGON ((-120.8966 58.7842...</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(smoke)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Satellite            Start               End              Density         
+ Length:58          Length:58          Length:58          Length:58         
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+          geometry 
+ POLYGON      :58  
+ epsg:4326    : 0  
+ +proj=long...: 0  </code></pre>
+</div>
+</div>
+<p>Inspecting the smoke data set reveals that there are three classifications for smoke plume density (light, medium, heavy), and that there are multiple polygons to depict each category of smoke density. Plot the data to visually inspect the polygons.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(smoke<span class="sc">$</span>geometry,</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span><span class="fu">c</span>(<span class="st">"yellow"</span>, <span class="st">"orange"</span>, <span class="st">"red"</span>), <span class="co"># yellow=light, orange=medium, red=heavy</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">TRUE</span>,</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">graticule=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Intro-Envr-Spatial_files/figure-html/unnamed-chunk-37-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The polygons are visible, but do not convey useful information without the context of geographical or political borders. To contextualize the smoke plume coverage polygons, download and import the United States’ state border data. As the state border data set is also a polygon data type, the downloading, unzipping, and importing steps will be the same as with the smoke polygons.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># specify the URL where data is stored</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>url_states <span class="ot">&lt;-</span> <span class="st">"https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"</span></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specify where to save downloaded data</span></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>destination_states <span class="ot">&lt;-</span> <span class="st">"/   YOUR FILE PATH   /states.zip"</span></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a><span class="co"># download the data</span></span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(url_states,</span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>              destination_states)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Once the file has finished downloading, open <code>states.zip</code> with <code>unzip()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span>(<span class="st">"/   YOUR FILE PATH   /states.zip"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The boundary data downloaded from the census website is a shapefile. To load the data in, identify the file with <code>.shp</code> file type. For the data downloaded, this should be <code>cb_2018_us_state_500k.shp</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list.files</span>(<span class="st">"/   YOUR FILE PATH   /"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "cb_2018_us_state_500k.cpg"           
+ [2] "cb_2018_us_state_500k.dbf"           
+ [3] "cb_2018_us_state_500k.prj"           
+ [4] "cb_2018_us_state_500k.shp"           
+ [5] "cb_2018_us_state_500k.shp.ea.iso.xml"
+ [6] "cb_2018_us_state_500k.shp.iso.xml"   
+ [7] "cb_2018_us_state_500k.shx"           
+ [8] "daily_88101_2021.csv"                
+ [9] "epa_data.zip"                        
+[10] "hms_smoke20230901.dbf"               
+[11] "hms_smoke20230901.prj"               
+[12] "hms_smoke20230901.shp"               
+[13] "hms_smoke20230901.shx"               
+[14] "noaa_smoke20230901.zip"              
+[15] "states.zip"                          </code></pre>
+</div>
+</div>
+<p>Import the state boundary data using the <code>sf</code> package with <code>sf::st_read()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>states <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"/   YOUR FILE PATH   /cb_2018_us_state.shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>For the purposes of this example, we will only consider the contiguous United States.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="co"># define list of state and territories to be removed</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>remove <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Alaska"</span>,</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Hawaii"</span>,</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Puerto Rico"</span>,</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">"United States Virgin Islands"</span>,</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Commonwealth of the Northern Mariana Islands"</span>,</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Guam"</span>,</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"American Samoa"</span>)</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a><span class="co"># remove states and territories</span></span>
+<span id="cb52-11"><a href="#cb52-11" aria-hidden="true" tabindex="-1"></a>conus <span class="ot">&lt;-</span> <span class="fu">subset</span>(states,</span>
+<span id="cb52-12"><a href="#cb52-12" aria-hidden="true" tabindex="-1"></a>                <span class="sc">!</span>NAME <span class="sc">%in%</span> remove)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As an exploratory analysis, create a single polygon that encompasses all smoke plume density measurements. The new polygon shows the distribution of smoke plume of any density on September 1, 2023.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>smoke_union <span class="ot">&lt;-</span> <span class="fu">st_union</span>(smoke)</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(smoke_union,</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span><span class="st">"grey"</span>,</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">TRUE</span>,</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">graticule=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Intro-Envr-Spatial_files/figure-html/unnamed-chunk-47-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This step shows the funcitonality of the <code>sf::st_union</code> function, but removes an important aspect of the data. To account for this, write a <code>for</code> loop that iterates this process for each density type.</p>
+<p>First, define a variable containing the three different smoke plume coverage types.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>dens <span class="ot">&lt;-</span> <span class="fu">unique</span>(smoke<span class="sc">$</span>Density)</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>dens</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Light"  "Medium" "Heavy" </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>smoke_sub_union <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="co"># for each smoke plume coverage type</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(d <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(dens)){</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># subset the `smoke` data set to only the density of interest</span></span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>  smoke_sub <span class="ot">&lt;-</span> <span class="fu">subset</span>(smoke, Density<span class="sc">==</span>dens[d])</span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># perform the `sf::st_union` function on the subset of smoke data</span></span>
+<span id="cb56-9"><a href="#cb56-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># save the "union-ed" data as a multipolygon object in the list smoke_sub_union</span></span>
+<span id="cb56-10"><a href="#cb56-10" aria-hidden="true" tabindex="-1"></a>  smoke_sub_union[d] <span class="ot">&lt;-</span> <span class="fu">st_union</span>(smoke_sub)</span>
+<span id="cb56-11"><a href="#cb56-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(smoke_sub_union,</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="co">#      col=c("yellow", "orange", "red"),</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a><span class="co">#      axes=TRUE,</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a><span class="co">#      graticule=TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>When plotting two data sets together, it is important to ensure both data sets have the same coordinate reference system.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># st_crs(conus) &lt;- st_crs(smoke_sub_union)</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a><span class="co"># st_transform(conus, "EPSG:4326")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we are ready, create a plot of the contiguous United States with the wildfire smoke plume coverage overlayed, color coded by smoke type.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ggplot()+</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_sf(data=smoke,aes(fill=Density))+</span></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   scale_fill_manual(breaks=c("Light", "Medium", "Heavy"),</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a><span class="co">#                     values=c("yellow", "orange", "red"))+</span></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_sf(data=conus, col="black", fill="transparent")+</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   theme_pubr(legend="none")+</span></span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   theme(axis.line.x = element_blank(), axis.line.y = element_blank(),</span></span>
+<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a><span class="co">#         axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),</span></span>
+<span id="cb59-9"><a href="#cb59-9" aria-hidden="true" tabindex="-1"></a><span class="co">#         axis.title = element_blank(), axis.text = element_blank())</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="terra-package" class="level5">
+<h5 class="anchored" data-anchor-id="terra-package">1.2.2 <code>terra</code> package</h5>
+</section>
+</section>
+</section>
+<section id="break-1" class="level1">
+<h1>============= BREAK ==============</h1>
+<section id="raster-data" class="level4">
+<h4 class="anchored" data-anchor-id="raster-data">1.3 Raster Data</h4>
+<section id="terra" class="level5">
+<h5 class="anchored" data-anchor-id="terra">1.3.1 <code>terra</code></h5>
+</section>
+<section id="raster" class="level5">
+<h5 class="anchored" data-anchor-id="raster">1.3.2 <code>raster</code></h5>
+<p>The ‘terra’ package is extremely useful for handling raster data types. The ‘terra’ package will be used for the following examples, and needs to be installed and loaded into the library.</p>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
