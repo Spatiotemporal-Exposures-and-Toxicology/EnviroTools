@@ -51,4 +51,5 @@ rsconnect/
 # data stored in input folder
 input/
 
-#
+# extra files from mac
+._*
