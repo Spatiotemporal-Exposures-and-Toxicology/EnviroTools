@@ -52,4 +52,7 @@ rsconnect/
 input/
 
 # extra files from mac
-/R/*._*
+/R/._*
+
+# images created in rendering
+.png
