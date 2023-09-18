@@ -55,4 +55,7 @@ input/
 /R/._*
 
 # images created in rendering
-.png
+*.png
+
+# git ignore save
+.gitignore.save

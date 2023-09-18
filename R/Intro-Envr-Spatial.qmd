@@ -20,11 +20,11 @@ This vignette outline was developed without detailed text explaining the reasoni
 This vignette utilizes various free and publicly available spatial data sets. Access to individual files is included in the code, but a high level description of each data set can be located for the following sources.
 
 | Data                                | Producer                                               | Link                                                                                        |
-|------------------|-------------------|------------------------------------|
+|-------------------|-------------------|----------------------------------|
 | PM~2.5~ Daily Observations          | Environmental Protection Agency (EPA)                  | <https://aqs.epa.gov/aqsweb/airdata/download_files.html>                                    |
-| HMS Fire and Smoke Product          | National Oceanic and Atmospheric Administration (NOAA) | <https://www.ospo.noaa.gov/Products/land/hms.html>                                          |
+| Wildfire Smoke Plumes               | National Oceanic and Atmospheric Administration (NOAA) | <https://www.ospo.noaa.gov/Products/land/hms.html>                                          |
 | United States Cartographic Boundary | United States Census Bureau                            | <https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html> |
-| RASTER DATA PLACEHOLDER             | RASTER DATA PLACEHOLDER                                | RASTER DATA PLACEHOLDER                                                                     |
+| Land Surface Temperature            | National Aeronautics and Space Administration (NASA)   | <https://lpdaac.usgs.gov/products/mod11a1v006/>                                             |
 
 : Exploratory analyses data sources
 
@@ -170,7 +170,7 @@ st_crs(pm_sf)
 #### 1.6.1 Set coordinate reference system
 
 ```{r}
-st_crs(pm_sf) <- "EPSG:4326"
+st_crs(pm_sf) <- "EPSG:5070"
 st_crs(pm_sf)
 ```
 
@@ -560,7 +560,7 @@ st_crs(smoke_density) <- st_crs(conus)
 st_crs(smoke_density)==st_crs(conus)
 ```
 
-Set matching projections (Albers Equal Area).
+Set matching projections (USA Contiguous Albers Equal Area Conic).
 
 ```{r}
 smoke_density <- st_transform(smoke_density,
@@ -617,7 +617,7 @@ smoke_t <- vect("/   YOUR FILE PATH   /hms_smoke20230901.shp")
 states_t <- vect("/   YOUR FILE PATH   /cb_2018_us_state_500k.shp")
 ```
 
-```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
+```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
 ###########################################
 smoke_t <- vect("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/hms_smoke20230901.shp")
 states_t <- vect("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/cb_2018_us_state_500k.shp")
@@ -677,7 +677,26 @@ ggplot()+
   theme_pubr(legend="bottom")
 ```
 
-#### 2.2.7 Identify presence of smoke plumes in each state
+#### 2.2.7 Crop smoke data to state boundaries
+
+```{r}
+smoke_density_crop_t <- terra::crop(smoke_density_t,
+                                    conus_t)
+```
+
+```{r}
+ggplot()+
+  geom_spatvector(data=smoke_density_crop_t,
+                  aes(fill=Density))+
+  scale_fill_manual("Smoke Density",
+                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
+  geom_spatvector(data=conus_t,
+                  fill="transparent")+
+  ggtitle("Wildfire Smoke Plumes in the United States (September 1, 2023)")+
+  theme_pubr(legend="bottom")
+```
+
+#### 2.2.8 Identify presence of smoke plumes in each state
 
 Identify where smoke polygons intersect state boundaries.
 
@@ -700,7 +719,7 @@ conus_t <- cbind(conus_t,
                  conus_smoke)
 ```
 
-#### 2.2.8 Compare presence of smoke plume coverage across states
+#### 2.2.9 Compare presence of smoke plume coverage across states
 
 New variable with smoke density classifications as character.
 
@@ -735,8 +754,258 @@ for(d in 1:length(dens_c)){
 }
 ```
 
+```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
+# # initiate empty plot list
+# smoke_plots <- list()
+# 
+# for(d in 1:length(dens_c)){
+#   
+#   # define color palette based on smoke density
+#   if(dens_c[d]=="Light"){
+#     color_values <- c("lightgrey", "lightgreen")
+#   } else if(dens_c[d]=="Medium"){
+#     color_values <- c("lightgrey", "lightgoldenrod")
+#   } else if(dens_c[d]=="Heavy"){
+#     color_values <- c("lightgrey", "tomato")
+#   }
+#   
+#   smoke_plot_x[[d]] <-
+#     ggplot()+
+#       geom_spatvector(data=conus_t,
+#                       aes_string(fill=dens_c[d]))+
+#       scale_fill_manual(paste0(dens_c[d],
+#                                " Smoke Plume Coverage Present"),
+#                         values=color_values)+
+#       theme_pubr(legend="none")+
+#       theme(axis.line = element_blank(),
+#             axis.text = element_blank(),
+#             axis.ticks = element_blank(),
+#             panel.grid.major = element_blank(),
+#             panel.grid.minor = element_blank(),
+#             panel.border = element_blank(),
+#             panel.background = element_blank())
+# 
+#   smoke_plots <- append(smoke_plots,
+#                         smoke_plot_x)
+#   
+# }
+# 
+# # create 1 x 3 image with all three smoke density plots
+# smoke_arrange <- ggarrange(plotlist=smoke_plots,
+#                            nrow=1,
+#                            ncol=3)
+# 
+# smoke_arrange$`1`
+```
+
 # ============= BREAK ==============
 
 ## 3. Raster Data
 
 ### 3.0 Access and download
+
+Define year of interest.
+
+```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide'}
+year = "2021"
+```
+
+Set link to data access URL and specify saving location.
+
+```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
+# specify the URL where data is stored based on year variable of interest
+url_narr <- paste0("https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
+                   year,
+                   ".nc")
+
+# specify where to save downloaded data
+destination_narr <- paste0("/   YOUR FILE PATH   /narr_air2m_",
+                           year,
+                           ".nc")
+
+# download the data
+download.file(url_narr,
+              destination_narr)
+```
+
+```{r, include = FALSE, eval=FALSE}
+###########################################
+## NEED TO CHANGE eval=TRUE for publication
+###########################################
+url_narr <- paste0("https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
+                   year,
+                   ".nc")
+destination_narr <- paste0("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/narr_air2m_",
+                           year,
+                           ".nc")
+download.file(url_narr,
+              destination_narr)
+```
+
+Identify file name.
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+list.files("/   YOUR FILE PATH   /")
+```
+
+```{r, echo=FALSE}
+###########################################
+list.files("/Volumes/SET/Projects/EnviroTools/EnviroTools/input")
+###########################################
+```
+
+### 3.1 Import data with `terra`
+```{r, eval=FALSE}
+narr <- rast(paste0("/   YOUR FILE PATH   /narr_air2m_",
+                    year,
+                    ".nc")
+```
+
+```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
+narr <- rast(paste0("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/narr_air2m_",
+                    year,
+                    ".nc"))
+```
+
+### 3.2 Inspect contents
+```{r}
+narr
+```
+
+### 3.3 Check coordinate reference system
+```{r}
+crs(narr,
+    describe=TRUE)
+```
+
+#### 3.3.1 Set cooridnate reference system
+
+To match the coordinate reference systems of the previous data, set the coordinate reference system to USA Contiguous Albers Equal Area Conic.
+
+```{r}
+# crs(narr) <- "EPSG:5070"
+```
+
+#### 3.3.2 Project the data
+
+```{r}
+narr <- project(narr, "EPSG:5070")
+crs(narr,
+    describe=TRUE)
+```
+
+### 3.4 Visually inspect the data
+
+Check for matching coordinate reference system with contiguous United States borders
+
+```{r}
+crs(conus_t) == crs(narr)
+```
+
+Plot only the first layer.
+
+```{r}
+ggplot()+
+  geom_spatraster(data=narr$air_1)+
+  scale_fill_continuous(type="viridis",
+                        na.value=NA,
+                        "Temperature (°K)")+
+  ggtitle("Air Temperature at 2m Height (January 1, 2021)")+
+  geom_spatvector(data=conus_t,
+                  fill="transparent",
+                  color="black")+
+  theme_pubr(legend="bottom")
+```
+
+```{r}
+plot(narr$air_1)
+plot(conus_t,
+     add=TRUE)
+```
+
+### 3.5 Crop temperature data
+```{r}
+narr_crop <- crop(narr,
+                  conus_t,
+                  mask=TRUE)
+```
+
+### 3.6 Plot cropped temperature data
+
+```{r}
+ggplot()+
+  geom_spatraster(data=narr_crop$air_1)+
+  scale_fill_continuous(type="viridis",
+                        na.value=NA,
+                        "Temperature (°K)")+
+  ggtitle("Air Temperature at 2m Height (January 1, 2021)")+
+  geom_spatvector(data=conus_t,
+                  fill="transparent",
+                  color="black")+
+  theme_pubr(legend="bottom")
+```
+
+### 3.7 Convert degrees Kelvin to degrees Celsius
+
+Performing basic mathematical and statistical operations on raster and SpatRaster objects is simple.
+
+```{r}
+narr_crop_c <- narr_crop-273.15
+```
+
+Re-plot with degrees Celsius.
+
+```{r}
+ggplot()+
+  geom_spatraster(data=narr_crop_c$air_1)+
+  scale_fill_continuous(type="viridis",
+                        na.value=NA,
+                        "Temperature (°C)")+
+  ggtitle("Air Temperature at 2m Height (January 1, 2021)")+
+  geom_spatvector(data=conus_t,
+                  fill="transparent",
+                  color="black")+
+  theme_pubr(legend="bottom")
+```
+
+### 3.8 Calculate annual mean and range of temperature for each grid cell
+
+```{r}
+narr_crop_c$mean <- mean(narr_crop_c,
+                         na.rm=TRUE)
+narr_crop_c$range <- max(narr_crop_c,
+                         na.rm=TRUE) - min(narr_crop_c,
+                                           na.rm = TRUE)
+summary(narr_crop_c$mean); summary(narr_crop_c$range)
+```
+
+Plot the annual mean and range of temperatures.
+```{r, warning=FALSE}
+ggplot()+
+  geom_spatraster(data=narr_crop_c[[c("mean", "range")]])+
+  scale_fill_continuous(type="viridis",
+                        na.value=NA,
+                        "Temperature (°C)")+
+  facet_wrap(~lyr,)+
+  ggtitle("Air Temperature in 2021")+
+  geom_spatvector(data=conus_t,
+                  fill="transparent",
+                  color="black")+
+  theme_pubr(legend="bottom")
+```
+
+### 3.9
+```{r, warning=FALSE}
+ggplot(data=narr_crop_c,
+       aes(x=air_1,
+           y=air_2))+
+  geom_point()+
+  theme_pubr()
+```
+
+
+
+
+
+
+
