@@ -72,7 +72,7 @@ download.file(url_epa,
 ## NEED TO CHANGE eval=TRUE for publication
 ###########################################
 url_epa <- "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
-destination_epa <- "/Volumes/SET/Projects/EnviroTools/EnviroTools/input/epa_data.zip"
+destination_epa <- "/Volumes/SET/Projects/EnviroTools/input/epa_data.zip"
 download.file(url_epa,
               destination_epa)
 ```
@@ -88,7 +88,7 @@ unzip("/   YOUR FILE PATH   /epa_data.zip")
 ## NEED TO CHANGE eval=TRUE for publication
 ###########################################
 utils::unzip("/Volumes/SET/Projects/EnviroTools/input/epa_data.zip",
-             exdir = "/Volumes/SET/Projects/EnviroTools/EnviroTools/input")
+             exdir = "/Volumes/SET/Projects/EnviroTools/input")
 ```
 
 Identify file name.
@@ -99,7 +99,7 @@ list.files("/   YOUR FILE PATH   /")
 
 ```{r, echo=FALSE}
 ###########################################
-list.files("/Volumes/SET/Projects/EnviroTools/EnviroTools/input")
+list.files("/Volumes/SET/Projects/EnviroTools/input")
 ###########################################
 ```
 
@@ -111,7 +111,7 @@ pm <- st_read("/   YOUR FILE PATH   /daily_88101_2021.csv")
 
 ```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
 ###########################################
-pm <- st_read("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/daily_88101_2021.csv")
+pm <- st_read("/Volumes/SET/Projects/EnviroTools/input/daily_88101_2021.csv")
 ###########################################
 ```
 
@@ -363,7 +363,7 @@ unzip("/   YOUR FILE PATH   /noaa_smoke20230901.zip")
 ## NEED TO CHANGE eval=TRUE for publication
 ###########################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/noaa_smoke20230901.zip",
-      exdir = "/Volumes/SET/Projects/EnviroTools/EnviroTools/input")
+      exdir = "/Volumes/SET/Projects/EnviroTools/input")
 ```
 
 Identify file name.
@@ -374,7 +374,7 @@ list.files("/   YOUR FILE PATH   /")
 
 ```{r, echo=FALSE}
 ###########################################
-list.files("/Volumes/SET/Projects/EnviroTools/EnviroTools/input")
+list.files("/Volumes/SET/Projects/EnviroTools/input")
 ###########################################
 ```
 
@@ -388,7 +388,7 @@ smoke <- st_read("/   YOUR FILE PATH   /hms_smoke20230901.shp")
 
 ```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
 ###########################################
-smoke <- st_read("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/hms_smoke20230901.shp")
+smoke <- st_read("/Volumes/SET/Projects/EnviroTools/input/hms_smoke20230901.shp")
 ###########################################
 ```
 
@@ -503,7 +503,7 @@ list.files("/   YOUR FILE PATH   /")
 
 ```{r, echo=FALSE}
 ###########################################
-list.files("/Volumes/SET/Projects/EnviroTools/EnviroTools/input")
+list.files("/Volumes/SET/Projects/EnviroTools/input")
 ###########################################
 ```
 
@@ -515,7 +515,7 @@ states <- st_read("/   YOUR FILE PATH   /cb_2018_us_state.shp")
 
 ```{r, include=FALSE}
 ###########################################
-states <- st_read("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/cb_2018_us_state_500k.shp")
+states <- st_read("/Volumes/SET/Projects/EnviroTools/input/cb_2018_us_state_500k.shp")
 ###########################################
 ```
 
@@ -619,8 +619,8 @@ states_t <- vect("/   YOUR FILE PATH   /cb_2018_us_state_500k.shp")
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
 ###########################################
-smoke_t <- vect("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/hms_smoke20230901.shp")
-states_t <- vect("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/cb_2018_us_state_500k.shp")
+smoke_t <- vect("/Volumes/SET/Projects/EnviroTools/input/hms_smoke20230901.shp")
+states_t <- vect("/Volumes/SET/Projects/EnviroTools/input/cb_2018_us_state_500k.shp")
 ###########################################
 ```
 
@@ -835,7 +835,7 @@ download.file(url_narr,
 url_narr <- paste0("https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
                    year,
                    ".nc")
-destination_narr <- paste0("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/narr_air2m_",
+destination_narr <- paste0("/Volumes/SET/Projects/EnviroTools/input/narr_air2m_",
                            year,
                            ".nc")
 download.file(url_narr,
@@ -850,11 +850,12 @@ list.files("/   YOUR FILE PATH   /")
 
 ```{r, echo=FALSE}
 ###########################################
-list.files("/Volumes/SET/Projects/EnviroTools/EnviroTools/input")
+list.files("/Volumes/SET/Projects/EnviroTools/input")
 ###########################################
 ```
 
 ### 3.1 Import data with `terra`
+
 ```{r, eval=FALSE}
 narr <- rast(paste0("/   YOUR FILE PATH   /narr_air2m_",
                     year,
@@ -862,17 +863,19 @@ narr <- rast(paste0("/   YOUR FILE PATH   /narr_air2m_",
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
-narr <- rast(paste0("/Volumes/SET/Projects/EnviroTools/EnviroTools/input/narr_air2m_",
+narr <- rast(paste0("/Volumes/SET/Projects/EnviroTools/input/narr_air2m_",
                     year,
                     ".nc"))
 ```
 
 ### 3.2 Inspect contents
+
 ```{r}
 narr
 ```
 
 ### 3.3 Check coordinate reference system
+
 ```{r}
 crs(narr,
     describe=TRUE)
@@ -924,6 +927,7 @@ plot(conus_t,
 ```
 
 ### 3.5 Crop temperature data
+
 ```{r}
 narr_crop <- crop(narr,
                   conus_t,
@@ -980,6 +984,7 @@ summary(narr_crop_c$mean); summary(narr_crop_c$range)
 ```
 
 Plot the annual mean and range of temperatures.
+
 ```{r, warning=FALSE}
 ggplot()+
   geom_spatraster(data=narr_crop_c[[c("mean", "range")]])+
@@ -995,6 +1000,7 @@ ggplot()+
 ```
 
 ### 3.9
+
 ```{r, warning=FALSE}
 ggplot(data=narr_crop_c,
        aes(x=air_1,
@@ -1002,10 +1008,3 @@ ggplot(data=narr_crop_c,
   geom_point()+
   theme_pubr()
 ```
-
-
-
-
-
-
-
