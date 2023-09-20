@@ -52,16 +52,16 @@ rsconnect/
 input/
 
 # extra files from mac
-/R/._*
+R/._*
 
 # images created in rendering
-*.png
+R/*.png
 
 # git ignore save
 .gitignore.save
 
 # intro-envr-spatil_files folder
-/R/Intro-Envr-Spatial_files/
+R/Intro-Envr-Spatial_files/
 
 # .html files in R/ folder
-/R/*.html
+R/*.html
