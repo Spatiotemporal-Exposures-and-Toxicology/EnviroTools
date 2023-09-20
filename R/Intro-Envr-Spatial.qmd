@@ -27,12 +27,14 @@ This vignette will cover the following topics related to spatial analyses with e
 
 -   Raster data with `terra`
 
+-   TEST FOR CHANGES IN GitHub
+
 ### Data Sources
 
 This vignette utilizes various free and publicly available spatial data sets. Access to individual files is included in the code, but a description of each data source and data set is available below.
 
 | Data                                | Producer                                               | Link                                                                                        |
-|------------------|---------------------|---------------------------------|
+|-------------------|---------------------|---------------------------------|
 | PM~2.5~ Daily Observations          | Environmental Protection Agency (EPA)                  | <https://aqs.epa.gov/aqsweb/airdata/download_files.html>                                    |
 | Wildfire Smoke Plumes               | National Oceanic and Atmospheric Administration (NOAA) | <https://www.ospo.noaa.gov/Products/land/hms.html>                                          |
 | United States Cartographic Boundary | United States Census Bureau                            | <https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html> |
