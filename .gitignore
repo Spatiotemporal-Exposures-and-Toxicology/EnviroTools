@@ -65,3 +65,7 @@ R/Intro-Envr-Spatial_files/
 
 # .html files in R/ folder
 *.html
+
+# all files in R folder EXCEPT .qmd file
+R/*
+!R/*.qmd
