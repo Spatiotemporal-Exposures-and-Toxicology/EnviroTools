@@ -61,7 +61,7 @@ R/*.png
 .gitignore.save
 
 # intro-envr-spatil_files folder
-R/Intro-Envr-Spatial_files/
+Intro-Envr-Spatial_files/
 
 # .html files in R/ folder
-R/*.html
+*.html
