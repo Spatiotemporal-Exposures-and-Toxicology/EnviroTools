@@ -68,4 +68,4 @@ R/Intro-Envr-Spatial_files/
 
 # all files in R folder EXCEPT .qmd file
 R/*
-!R/*.qmd
+!R/Intro-Envr-Spatial.qmd
