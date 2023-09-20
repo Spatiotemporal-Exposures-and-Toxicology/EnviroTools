@@ -59,3 +59,9 @@ input/
 
 # git ignore save
 .gitignore.save
+
+# intro-envr-spatil_files folder
+/R/Intro-Envr-Spatial_files/
+
+# .html files in R/ folder
+/R/*.html
