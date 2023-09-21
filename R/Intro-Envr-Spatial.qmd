@@ -1,55 +1,72 @@
 ---
-title: "Intro-Environmental-Spatial-Analysis"
+title: "Spatial Analysis with Environmental Data"
 author: Mitchell Manware, Kyle P Messier
 format: html
 editor: visual
 ---
 
-## Introduction to Spatial Analysis with Environmental Data
+### Internal Notes
+
+-   **Bold text** indicates text that requires rephrasing.
+
+-   Code chunks with `##########` indicate chunks that are run to render the .html document but are not included in the .html, and may require edits before final rendering.
+
+-   Text preceded and followed by `#####` indicates revision is required
+
+# Unit 1: Access, Import, and Primary Analyses
 
 Environmental research relies on various types of spatial, temporal, and spatio-temporal data to accurately measure, predict, and model exposures.
 
-This vignette will introduce packages equipped to handle the various types of data often used in environmental research, will teach how to load/read each type of data into R, and how to perform simple/basic/primary analyses.
+This vignette will introduce packages equipped to handle the various types of data often used in environmental research. The vignette will also show/teach how to perform various analyses for each unique type of spatial data. Analyses include:
 
-#### Notes
+-   Downloading data from a URL
 
-This vignette outline was developed without detailed text explaining the reasoning for each step in the exploratory analyses.
+-   Importing data with various packages
 
-### Outline
+-   Checking data type, structure, and class
 
-This vignette will cover the following topics related to spatial analyses with environmental data:
+-   Reclassifying data
 
--   Point data with `sf`
+-   Computing summary statistics
 
--   Polygon data with `sf`
+-   Computing zonal statistics
 
--   Polygon data with `terra`
+-   Plotting single and multiple data sets
 
--   Raster data with `terra`
+##### This vignette assumes users' understanding of R **coding principles**, such as basic functions `+ - * / =`, "variables", and `$indexing`. For a primer on R, see <https://cran.r-project.org/doc/manuals/R-intro.pdf>. The terminology/jargon used throughout the vignette assumes users' understanding of primary spatial data concepts, such as the definitions of point, polygon, and raster data types. For more information on data types, see [1. Simple Features for R](https://r-spatial.github.io/sf/articles/sf1.html#what-is-a-feature) for a primer on point and polygon data types, and see [Introduction to Raster Data](https://datacarpentry.org/organization-geospatial/01-intro-raster-data) for a primer on raster data. #####
 
--   TEST FOR CHANGES IN GitHub
+::: callout-important
+The exploratory analyses performed in this vignette are designed for educational purposes only. The results of the following analyses are not peer-reviewed findings, nor do they attempt to answer any hypotheses.
 
-### Data Sources
-
-This vignette utilizes various free and publicly available spatial data sets. Access to individual files is included in the code, but a description of each data source and data set is available below.
-
-| Data                                | Producer                                               | Link                                                                                        |
-|-------------------|---------------------|---------------------------------|
-| PM~2.5~ Daily Observations          | Environmental Protection Agency (EPA)                  | <https://aqs.epa.gov/aqsweb/airdata/download_files.html>                                    |
-| Wildfire Smoke Plumes               | National Oceanic and Atmospheric Administration (NOAA) | <https://www.ospo.noaa.gov/Products/land/hms.html>                                          |
-| United States Cartographic Boundary | United States Census Bureau                            | <https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html> |
-| Land Surface Temperature            | National Oceanic and Atmospheric Administration (NOAA) | <https://psl.noaa.gov/data/gridded/data.narr.html>                                          |
-
-: Exploratory analyses data sources
+Additionally, the **views/opinions** conveyed in this vignette reflect the **views/opinions** of the authors alone, and do not reflect the **views/opinions** of the National Institutes of Health (NIH) or the National Institute of Environmental Health Sciences (NIEHS).
+:::
 
 ## 0. Introduction
 
-### 0.0 Download and Load Packages
+### 0.1 Data Sources
+
+The exploratory analyses performed in this vignette utilize free and publicly available spatial data. The code is designed to access each specific file used for the exploratory analyses, but a description of each data source and data set is available below.
+
+| Data                                | Data Type | Producer                                               | Link                                                                                        |
+|--------------|--------------|----------------|-----------------------------|
+| PM~2.5~ Daily Observations          | Point     | Environmental Protection Agency (EPA)                  | <https://aqs.epa.gov/aqsweb/airdata/download_files.html>                                    |
+| Wildfire Smoke Plumes               | Polygon   | National Oceanic and Atmospheric Administration (NOAA) | <https://www.ospo.noaa.gov/Products/land/hms.html>                                          |
+| United States Cartographic Boundary | Polygon   | United States Census Bureau                            | <https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html> |
+| Land Surface Temperature            | Raster    | National Oceanic and Atmospheric Administration (NOAA) | <https://psl.noaa.gov/data/gridded/data.narr.html>                                          |
+
+: Exploratory analyses data sources
+
+### 0.2 Download and Load Packages
+
+Many different R packages can be used to create, import, analyze, and export spatial data. If you have not used these packages previously, they may not be installed on your machine. The following chunk of code installs and imports the required packages that are not currently **on** your machine, so run the code before proceeding with the exploratory analyses.
+
+::: callout-note
+Installing and importing new packages may required R to restart.
+:::
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
-# may require R to restart
 vignette_packages = c("sf","terra", "ggplot2", "ggpubr", "dplyr", "sftime",
-                       "stars", "tidyterra")
+                       "stars", "tidyterra", "utils")
 
 for(v in 1:length(vignette_packages)){
   if (vignette_packages[v] %in% installed.packages() == FALSE){
@@ -58,52 +75,81 @@ for(v in 1:length(vignette_packages)){
 }
 
 library(sf); library(terra); library(ggplot2); library(ggpubr); library(dplyr);
-library(sftime); library(stars); library(tidyterra)
+library(sftime); library(stars); library(tidyterra); library(utils)
 ```
 
 ## 1. Point Data with `sf`
 
-### 1.0 Access and download
+Air pollution monitoring data from the United States Environmental Protection Agency (EPA) will be used to demonstrate **using** point data with the `sf` package.
 
-Set link to data access URL and specify saving location.
+### 1.0 Access, download, and unzip
+
+Define a variable to store the website URL where the data exists, and a second variable to store the file path (including `.zip`) **for where** the file should be saved. The `utils::download.file()` function downloads the file according to the defined URL and destination file.
+
+::: callout-note
+Multiple chunks of code in this vignette will contain `/   YOUR FILE PATH   /`. To run the code on your machine, substitute `/   YOUR FILE PATH   /` with the file path where you would like to store the vignette data (ie. `Users/example_name/Documents/vignette_data/"`).
+:::
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
-# specify the URL where data is stored
 url_epa = "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
 
-# specify where to save downloaded data
 destination_epa = "/   YOUR FILE PATH   /epa_data.zip"
 
-# download the data
 download.file(url_epa,
               destination_epa)
 ```
 
 ```{r, include = FALSE, eval=FALSE}
 ###########################################
-## NEED TO CHANGE eval=TRUE for publication
+## NEED TO CHANGE eval=TRUE for rendering
 ###########################################
 url_epa = "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
-destination_epa = "/Volumes/SET/Projects/EnviroTools/input/epa_data.zip"
+destination_epa = "/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip"
 download.file(url_epa,
               destination_epa)
+###########################################
 ```
 
-Unzip downloaded zip files.
+The file downloaded from the EPA website is a `.zip` file. Zip files need to be unzipped (decompressed) in order to access the data within. Unzip the EPA air pollution file with `utils::unzip()`.
+
+::: callout-warning
+Unzipping a `.zip` file will decompress the contents within. Spatial data sets can be very large (ie. 1GB \<), so check the size of the data before unzipping on your machine.
+:::
+
+```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
+unzip("/   YOUR FILE PATH   /epa_data.zip",
+      list = TRUE)
+```
+
+```{r, echo=FALSE}
+###########################################
+unzip("/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip",
+      list = TRUE)
+###########################################
+```
+
+The numeric value size of the file is listed under `Length`.
+
+After inspecting the file size, unzip `epa_data.zip`.
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
 unzip("/   YOUR FILE PATH   /epa_data.zip")
 ```
 
-```{r, include=FALSE, eval=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 ###########################################
-## NEED TO CHANGE eval=TRUE for publication
+## NEED TO CHANGE eval=TRUE for rendering
 ###########################################
-utils::unzip("/Volumes/SET/Projects/EnviroTools/input/epa_data.zip",
-             exdir = "/Volumes/SET/Projects/EnviroTools/input")
+utils::unzip("/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip",
+             exdir = "/Volumes/SET/Projects/EnviroTools/input/epa")
+###########################################
 ```
 
-Identify file name.
+Inspecting the file with `utils::unzip(list = TRUE)` returned the size of the file, but also the **name of the actual data file of interest** (`daily_88101_2021.csv`). The desired data file can also be identified by using `list.files()`.
+
+::: callout-note
+If `/   YOUR FILE PATH   /` is a directory with other contents (ie. `/Users/example_name/Desktop/`), other files names may be returned.
+:::
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
 list.files("/   YOUR FILE PATH   /")
@@ -111,11 +157,13 @@ list.files("/   YOUR FILE PATH   /")
 
 ```{r, echo=FALSE}
 ###########################################
-list.files("/Volumes/SET/Projects/EnviroTools/input")
+list.files("/Volumes/SET/Projects/EnviroTools/input/epa")
 ###########################################
 ```
 
-### 1.1 Import data with `sf::st_read()`
+### 1.1 Import
+
+Now that the contents of `epa_data.zip` have been saved on your machine and `daily_88101_2021.csv` has been identified as the data set of interest, import the data with `sf::st_read()`.
 
 ```{r, eval=FALSE}
 pm = st_read("/   YOUR FILE PATH   /daily_88101_2021.csv")
@@ -123,17 +171,30 @@ pm = st_read("/   YOUR FILE PATH   /daily_88101_2021.csv")
 
 ```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
 ###########################################
-pm = st_read("/Volumes/SET/Projects/EnviroTools/input/daily_88101_2021.csv")
+pm = st_read("/Volumes/SET/Projects/EnviroTools/input/epa/daily_88101_2021.csv")
 ###########################################
 ```
 
-### 1.2 Inspect contents
+::: callout-note
+You will notice that the previous line of code returns a `Warning:` message. **This warning lets the user know that the imported `.csv` file does not have spatial features, but it has still been imported as a normal `data.frame`**.
+:::
+
+### 1.2 Inspect structure
+
+Inspect the structure of `pm` to see its class, column names, column classes, and the first two (specified by `vec.len = 2`) data points from each column.
 
 ```{r}
-str(pm)
+str(pm,
+    vec.len = 2)
 ```
 
-### 1.3 Subset to parameters of interest
+`pm` is a very large data set (590208 observations for 29 variables). Each of these variables conveys important information pertaining to air pollution monitoring **data**, but not all of the variables will be utilized in the exploratory analyses.
+
+### 1.3 Subset
+
+Reduce the number of variables in `pm` with `subset()`. The `select =` argument indicates that certain variables are being "selected", but all observations of these variables will be retained. The following variables will be retained for the exploratory analyses: state code, county code, site number, latitude, longitude, state name, date, and arithmetic mean.
+
+Re-running `str(pm)` after running the `subset` shows that all observations (n = 590208) of the desired variables (n = 8) have been retained.
 
 ```{r}
 pm = subset(pm, select=c(State.Code,
@@ -144,34 +205,49 @@ pm = subset(pm, select=c(State.Code,
                          State.Name,
                          Date.Local,
                          Arithmetic.Mean))
-str(pm)
+str(pm,
+    vec.len = 2)
 ```
 
-### 1.4 Reclassify parameters of interest
+### 1.4 Reclassify
+
+When the `str()` function is run, `: chr` **follows** each of the variable names, indicating that the variable is of class `character`. This can also be determined by the quotations **encasing** the first two data points of each variable (ie. `$ State.Code    : chr "01" "01" ...`).
+
+The class of the variable depends on the information stored within that variable. For example, `character` class data is **appropriate** for words (ie. `$State.Name`), but not for numeric measurements (ie. `$Arithmetic.Mean`) or dates (ie. `$Date.Local`).
+
+The `as.` family of functions is useful for converting data to a different class. For the purposes of these exploratory analyses, only `$Date.Local` and `$Arithmetic.Mean` will be reclassified.
 
 ```{r}
 pm$Date.Local = as.Date(pm$Date.Local)
 pm$Arithmetic.Mean = as.numeric(pm$Arithmetic.Mean)
 ```
 
-#### 1.4.1 Ensure proper reclassification
+After running the `as.` functions, ensure that the variable has been converted to the desired class.
 
 ```{r}
 class(pm$Date.Local); class(pm$Arithmetic.Mean)
 ```
 
-### 1.5 Convert data frame to `sf` object
+### 1.5 **Create/Convert to** `sf` object
+
+With the variables of interest selected and the **important reclassifications made**, `pm` can be converted to an `sf` object. Conversion to an `sf` object **spatially enables** the data frame in order to conduct spatial analyses.
+
+The `st_as_sf()` function creates a `$geometry` field based on the coordinates contained in the `pm` data frame. The columns containing the x and y coordinates are specified in the argument `coords = c()`.
 
 ```{r}
 pm_sf = st_as_sf(pm,
                  coords=c("Longitude", "Latitude"))
 ```
 
-#### 1.5.1 Check class of `pm_sf`
+After running the `st_as_sf()` function, inspect the classes of `pm_sf` and `pm_sf$geometry` to see the changes.
 
 ```{r}
 class(pm_sf); class(pm_sf$geometry)
 ```
+
+You will notice that `class(pm_sf)` returned two values, `"sf"` and `"data.frame"`. This indicates that `pm_sf` contains non-spatial data and a spatially defined geometry.
+
+![sf::st_sf_sf() visual](/Volumes/SET/Projects/EnviroTools/input/figures/st_as_sf_visual.png)
 
 ### 1.6 Check coordinate reference system
 
@@ -352,7 +428,7 @@ download.file(url_noaa,
 
 ```{r, include = FALSE, eval=FALSE}
 ###########################################
-## NEED TO CHANGE eval=TRUE for publication
+## NEED TO CHANGE eval=TRUE for rendering
 ###########################################
 url_noaa = paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/",
                   year,
@@ -363,7 +439,7 @@ url_noaa = paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Po
                   month,
                   day,
                   ".zip")
-destination_noaa = paste0("/Volumes/SET/Projects/EnviroTools/input/noaa_smoke",
+destination_noaa = paste0("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke",
                           year,
                           month,
                           day,
@@ -379,10 +455,10 @@ unzip("/   YOUR FILE PATH   /noaa_smoke20230901.zip")
 
 ```{r, include=FALSE, eval=FALSE}
 ###########################################
-## NEED TO CHANGE eval=TRUE for publication
+## NEED TO CHANGE eval=TRUE for rendering
 ###########################################
-unzip("/Volumes/SET/Projects/EnviroTools/input/noaa_smoke20230901.zip",
-      exdir = "/Volumes/SET/Projects/EnviroTools/input")
+unzip("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke20230901.zip",
+      exdir = "/Volumes/SET/Projects/EnviroTools/input/noaa")
 ```
 
 Identify file name.
@@ -393,7 +469,7 @@ list.files("/   YOUR FILE PATH   /")
 
 ```{r, echo=FALSE}
 ###########################################
-list.files("/Volumes/SET/Projects/EnviroTools/input")
+list.files("/Volumes/SET/Projects/EnviroTools/input/noaa")
 ###########################################
 ```
 
@@ -405,9 +481,13 @@ list.files("/Volumes/SET/Projects/EnviroTools/input")
 smoke = st_read("/   YOUR FILE PATH   /hms_smoke20230901.shp")
 ```
 
-```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
+```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
 ###########################################
-smoke = st_read("/Volumes/SET/Projects/EnviroTools/input/hms_smoke20230901.shp")
+#### test for change cache=FALSE
+################## bug ####################
+smoke = st_read("/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp")
+#### .qmd or chunk fails to read data if sf:: is not included before st_read()
+###########################################
 ###########################################
 ```
 
@@ -427,7 +507,7 @@ unique(smoke$Density); class(smoke$Density)
 
 ```{r}
 smoke$Density = factor(smoke$Density,
-                       levels=c("Light", "Medium", "Heavy"))
+                       levels = c("Light", "Medium", "Heavy"))
 ```
 
 #### 2.1.5 Plot polygons with `ggplot2`
@@ -496,10 +576,10 @@ download.file(url_states,
 
 ```{r, include = FALSE, eval=FALSE}
 ###########################################
-## NEED TO CHANGE eval=TRUE for publication
+## NEED TO CHANGE eval=TRUE for rendering
 ###########################################
 url_states = "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
-destination_states = "/Volumes/SET/Projects/EnviroTools/input/states.zip"
+destination_states = "/Volumes/SET/Projects/EnviroTools/input/states/states.zip"
 download.file(url_states,
               destination_states)
 ```
@@ -512,10 +592,10 @@ unzip("/   YOUR FILE PATH   /states.zip")
 
 ```{r, include=FALSE, eval=FALSE}
 ###########################################
-## NEED TO CHANGE eval=TRUE for publication
+## NEED TO CHANGE eval=TRUE for rendering
 ###########################################
-unzip("/Volumes/SET/Projects/EnviroTools/input/states.zip",
-      exdir = "/Volumes/SET/Projects/EnviroTools/input")
+unzip("/Volumes/SET/Projects/EnviroTools/input/states/states.zip",
+      exdir = "/Volumes/SET/Projects/EnviroTools/input/states")
 ```
 
 Identify file name.
@@ -526,7 +606,7 @@ list.files("/   YOUR FILE PATH   /")
 
 ```{r, echo=FALSE}
 ###########################################
-list.files("/Volumes/SET/Projects/EnviroTools/input")
+list.files("/Volumes/SET/Projects/EnviroTools/input/states")
 ###########################################
 ```
 
@@ -538,7 +618,7 @@ states = st_read("/   YOUR FILE PATH   /cb_2018_us_state.shp")
 
 ```{r, include=FALSE}
 ###########################################
-states = st_read("/Volumes/SET/Projects/EnviroTools/input/cb_2018_us_state_500k.shp")
+states = st_read("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
 ###########################################
 ```
 
@@ -651,8 +731,8 @@ states_t = vect("/   YOUR FILE PATH   /cb_2018_us_state_500k.shp")
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
 ###########################################
-smoke_t = vect("/Volumes/SET/Projects/EnviroTools/input/hms_smoke20230901.shp")
-states_t = vect("/Volumes/SET/Projects/EnviroTools/input/cb_2018_us_state_500k.shp")
+smoke_t = vect("/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp")
+states_t = vect("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
 ###########################################
 ```
 
@@ -828,12 +908,12 @@ download.file(url_narr,
 
 ```{r, include = FALSE, eval=FALSE}
 ###########################################
-## NEED TO CHANGE eval=TRUE for publication
+## NEED TO CHANGE eval=TRUE for rendering
 ###########################################
 url_narr = paste0("https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
                   year,
                   ".nc")
-destination_narr = paste0("/Volumes/SET/Projects/EnviroTools/input/narr_air2m_",
+destination_narr = paste0("/Volumes/SET/Projects/EnviroTools/input/narr/narr_air2m_",
                           year,
                           ".nc")
 download.file(url_narr,
@@ -848,7 +928,7 @@ list.files("/   YOUR FILE PATH   /")
 
 ```{r, echo=FALSE}
 ###########################################
-list.files("/Volumes/SET/Projects/EnviroTools/input")
+list.files("/Volumes/SET/Projects/EnviroTools/input/narr")
 ###########################################
 ```
 
@@ -861,7 +941,7 @@ narr = rast(paste0("/   YOUR FILE PATH   /narr_air2m_",
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
-narr = rast(paste0("/Volumes/SET/Projects/EnviroTools/input/narr_air2m_",
+narr = rast(paste0("/Volumes/SET/Projects/EnviroTools/input/narr/narr_air2m_",
                     year,
                     ".nc"))
 ```
