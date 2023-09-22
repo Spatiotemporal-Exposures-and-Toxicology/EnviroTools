@@ -1,5 +1,5 @@
 ---
-title: "Spatial Analysis with Environmental Data"
+title: "Spatial Analysis with Environmental Data in R"
 author: Mitchell Manware, Kyle P Messier
 format: html
 editor: visual
@@ -7,11 +7,9 @@ editor: visual
 
 ### Internal Notes
 
--   **Bold text** indicates text that requires rephrasing.
+-   **Bold text** indicates text that requires revision
 
--   Code chunks with `##########` indicate chunks that are run to render the .html document but are not included in the .html, and may require edits before final rendering.
-
--   Text preceded and followed by `#####` indicates revision is required
+-   Code chunks preceded and followed by `##########` indicate chunks that are run to render the .html document but are not included in the .html, and may require edits before final rendering.
 
 # Unit 1: Access, Import, and Primary Analyses
 
@@ -27,13 +25,11 @@ This vignette will introduce packages equipped to handle the various types of da
 
 -   Reclassifying data
 
--   Computing summary statistics
+-   Computing summary and zonal statistics
 
--   Computing zonal statistics
+-   Plotting individual and multiple data sets
 
--   Plotting single and multiple data sets
-
-##### This vignette assumes users' understanding of R **coding principles**, such as basic functions `+ - * / =`, "variables", and `$indexing`. For a primer on R, see <https://cran.r-project.org/doc/manuals/R-intro.pdf>. The terminology/jargon used throughout the vignette assumes users' understanding of primary spatial data concepts, such as the definitions of point, polygon, and raster data types. For more information on data types, see [1. Simple Features for R](https://r-spatial.github.io/sf/articles/sf1.html#what-is-a-feature) for a primer on point and polygon data types, and see [Introduction to Raster Data](https://datacarpentry.org/organization-geospatial/01-intro-raster-data) for a primer on raster data. #####
+Requires revision: This vignette assumes users' understanding of R **coding principles**, such as basic functions `+ - * / =`, "variables", and `$indexing`. For a primer on R, see <https://cran.r-project.org/doc/manuals/R-intro.pdf>. The terminology/jargon used throughout the vignette assumes users' understanding of primary spatial data concepts, such as the definitions of point, polygon, and raster data types. For more information on data types, see [1. Simple Features for R](https://r-spatial.github.io/sf/articles/sf1.html#what-is-a-feature) for a primer on point and polygon data types, and see [Introduction to Raster Data](https://datacarpentry.org/organization-geospatial/01-intro-raster-data) for a primer on raster data.
 
 ::: callout-important
 The exploratory analyses performed in this vignette are designed for educational purposes only. The results of the following analyses are not peer-reviewed findings, nor do they attempt to answer any hypotheses.
@@ -48,7 +44,7 @@ Additionally, the **views/opinions** conveyed in this vignette reflect the **vie
 The exploratory analyses performed in this vignette utilize free and publicly available spatial data. The code is designed to access each specific file used for the exploratory analyses, but a description of each data source and data set is available below.
 
 | Data                                | Data Type | Producer                                               | Link                                                                                        |
-|--------------|--------------|----------------|-----------------------------|
+|----------------|----------------|----------------|--------------------------|
 | PM~2.5~ Daily Observations          | Point     | Environmental Protection Agency (EPA)                  | <https://aqs.epa.gov/aqsweb/airdata/download_files.html>                                    |
 | Wildfire Smoke Plumes               | Polygon   | National Oceanic and Atmospheric Administration (NOAA) | <https://www.ospo.noaa.gov/Products/land/hms.html>                                          |
 | United States Cartographic Boundary | Polygon   | United States Census Bureau                            | <https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html> |
@@ -65,8 +61,8 @@ Installing and importing new packages may required R to restart.
 :::
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
-vignette_packages = c("sf","terra", "ggplot2", "ggpubr", "dplyr", "sftime",
-                       "stars", "tidyterra", "utils")
+vignette_packages = c("dplyr", "ggplot2", "ggpubr", "sf", "sftime",
+                      "terra", "tidyterra", "utils")
 
 for(v in 1:length(vignette_packages)){
   if (vignette_packages[v] %in% installed.packages() == FALSE){
@@ -74,8 +70,8 @@ for(v in 1:length(vignette_packages)){
   }
 }
 
-library(sf); library(terra); library(ggplot2); library(ggpubr); library(dplyr);
-library(sftime); library(stars); library(tidyterra); library(utils)
+library(dplyr); library(ggplot2); library(ggpubr); library(sf);
+library(sftime); library(terra); library(tidyterra); library(utils)
 ```
 
 ## 1. Point Data with `sf`
@@ -100,14 +96,14 @@ download.file(url_epa,
 ```
 
 ```{r, include = FALSE, eval=FALSE}
-###########################################
+################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
-###########################################
+################################################################################
 url_epa = "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
 destination_epa = "/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip"
 download.file(url_epa,
               destination_epa)
-###########################################
+################################################################################
 ```
 
 The file downloaded from the EPA website is a `.zip` file. Zip files need to be unzipped (decompressed) in order to access the data within. Unzip the EPA air pollution file with `utils::unzip()`.
@@ -122,10 +118,10 @@ unzip("/   YOUR FILE PATH   /epa_data.zip",
 ```
 
 ```{r, echo=FALSE}
-###########################################
+################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip",
       list = TRUE)
-###########################################
+################################################################################
 ```
 
 The numeric value size of the file is listed under `Length`.
@@ -137,12 +133,12 @@ unzip("/   YOUR FILE PATH   /epa_data.zip")
 ```
 
 ```{r, echo=FALSE, eval=FALSE}
-###########################################
+################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
-###########################################
-utils::unzip("/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip",
-             exdir = "/Volumes/SET/Projects/EnviroTools/input/epa")
-###########################################
+################################################################################
+unzip("/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip",
+      exdir = "/Volumes/SET/Projects/EnviroTools/input/epa")
+################################################################################
 ```
 
 Inspecting the file with `utils::unzip(list = TRUE)` returned the size of the file, but also the **name of the actual data file of interest** (`daily_88101_2021.csv`). The desired data file can also be identified by using `list.files()`.
@@ -156,9 +152,9 @@ list.files("/   YOUR FILE PATH   /")
 ```
 
 ```{r, echo=FALSE}
-###########################################
+################################################################################
 list.files("/Volumes/SET/Projects/EnviroTools/input/epa")
-###########################################
+################################################################################
 ```
 
 ### 1.1 Import
@@ -169,10 +165,10 @@ Now that the contents of `epa_data.zip` have been saved on your machine and `dai
 pm = st_read("/   YOUR FILE PATH   /daily_88101_2021.csv")
 ```
 
-```{r, echo=FALSE, warning=TRUE, cache=TRUE, results='hide'}
-###########################################
+```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
+################################################################################
 pm = st_read("/Volumes/SET/Projects/EnviroTools/input/epa/daily_88101_2021.csv")
-###########################################
+################################################################################
 ```
 
 ::: callout-note
@@ -197,14 +193,14 @@ Reduce the number of variables in `pm` with `subset()`. The `select =` argument 
 Re-running `str(pm)` after running the `subset` shows that all observations (n = 590208) of the desired variables (n = 8) have been retained.
 
 ```{r}
-pm = subset(pm, select=c(State.Code,
-                         County.Code,
-                         Site.Num,
-                         Latitude,
-                         Longitude,
-                         State.Name,
-                         Date.Local,
-                         Arithmetic.Mean))
+pm = subset(pm, select = c(State.Code,
+                           County.Code,
+                           Site.Num,
+                           Latitude,
+                           Longitude,
+                           State.Name,
+                           Date.Local,
+                           Arithmetic.Mean))
 str(pm,
     vec.len = 2)
 ```
@@ -228,18 +224,18 @@ After running the `as.` functions, ensure that the variable has been converted t
 class(pm$Date.Local); class(pm$Arithmetic.Mean)
 ```
 
-### 1.5 **Create/Convert to** `sf` object
+### 1.5 Convert to `sf` object
 
 With the variables of interest selected and the **important reclassifications made**, `pm` can be converted to an `sf` object. Conversion to an `sf` object **spatially enables** the data frame in order to conduct spatial analyses.
 
-The `st_as_sf()` function creates a `$geometry` field based on the coordinates contained in the `pm` data frame. The columns containing the x and y coordinates are specified in the argument `coords = c()`.
+The `sf::st_as_sf()` function creates a `$geometry` field based on the coordinates contained in the `pm` data frame. The columns containing the x and y coordinates are specified in the argument `coords = c()`.
 
 ```{r}
 pm_sf = st_as_sf(pm,
-                 coords=c("Longitude", "Latitude"))
+                 coords = c("Longitude", "Latitude"))
 ```
 
-After running the `st_as_sf()` function, inspect the classes of `pm_sf` and `pm_sf$geometry` to see the changes.
+After running the `sf::st_as_sf()` function, inspect the classes of `pm_sf` and `pm_sf$geometry` to see the changes.
 
 ```{r}
 class(pm_sf); class(pm_sf$geometry)
@@ -249,53 +245,71 @@ You will notice that `class(pm_sf)` returned two values, `"sf"` and `"data.frame
 
 ![sf::st_sf_sf() visual](/Volumes/SET/Projects/EnviroTools/input/figures/st_as_sf_visual.png)
 
-### 1.6 Check coordinate reference system
+### 1.6 Coordinate reference system and projection
+
+**It is important to know the coordinate reference system and projection of the spatial data that is being used.** For a detailed explanation of coordinate reference systems and projections, please see **LINK**.
+
+The coordinate reference system of an `sf` object can be checked with `sf::st_crs()`.
 
 ```{r}
 st_crs(pm_sf)
 ```
 
-#### 1.6.1 Set coordinate reference system and project the data
+Running the function shows that `pm_sf` does have a coordinate reference system assigned. An `sf` object can be set to a coordinate reference system using the same function. For this example the World Geodesic System 1984 (WGS 84) will be used. The EPSG code of WGS 84 is `4326`.
 
 ```{r}
 st_crs(pm_sf) = 4326
-pm_sf = st_transform(pm_sf,
-                     "EPSG:5070")
 st_crs(pm_sf)
 ```
 
-### 1.7 Plot point locations with `ggplot2`
+After assigning a coordinate reference system to the data, the data can be projected (transformed) to a different projected coordinate system with `sf::st_transform()`.
+
+The area of interest for these exploratory analyses is the the coterminous United States, so the Albers Equal Area projected coordinate system will be used. The EPSG code of the Albers Equal Area projection for the coterminous United States is `5070`.
+
+```{r}
+pm_sf = st_transform(pm_sf,
+                     5070)
+```
+
+### 1.7 Plot
+
+Plotting spatial data is important for visual inspection of the data itself and for **communicating** spatial patterns in the data. The packages `ggplot2` and `ggpubr` are **useful** for creating publication quality plots with spatial data, non-spatial data, and **a combination of both**.
+
+Plot the point locations of each air pollution monitoring station included in the `pm_sf` data set with `ggplot2::ggplot()`. Identifying the data set to be plotted within the `ggplot2::geom_sf()` argument informs the function that the data is an `sf` object.
 
 ```{r}
 ggplot()+
-  geom_sf(data=pm_sf)+
-  ggtitle("EPA PM2.5 Monitoring Locations (2021)")+
+  geom_sf(data = pm_sf)+
+  ggtitle("EPA Air Pollution Monitoring Locations (2021)")+
   theme_pubr()+
   theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
 
-### 1.8 Inspect parameter of interest
+The plotted points show the distribution of monitoring locations throughout the Untied States, but do not convey any information about the concentrations of PM~2.5~ measurements at each location. Inspect the summary statistics of the parameter of interest before **plotting/mapping it**.
 
 ```{r}
 summary(pm_sf$Arithmetic.Mean); sd(pm_sf$Arithmetic.Mean)
 ```
 
-#### 1.8.1 Plot distribution of parameter of interest
+**Histograms are useful for visualizing the distribution of data.** Create a histogram by adding `ggplot2::geom_histogram()` as an argument to the `ggplot2::ggplot()` function.
 
 ```{r}
-ggplot(data=pm_sf,
+ggplot(data = pm_sf,
        aes(Arithmetic.Mean))+
-  geom_histogram(binwidth = 5)+
-  ggtitle("EPA PM2.5 Measurements (2021)")+
-  xlab("PM2.5 Concentration")+
+  geom_histogram(fill = "slateblue",
+                 binwidth = 5)+
+  ggtitle("Particulate Matter Measurements at EPA Monitoring Locations (2021)")+
+  xlab(expression("PM"[2.5]*" Concentration (µg/m"^3*")"))+
   ylab("Number of Measurements")+
   theme_pubr()+
   theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
 
-### 1.9 Create monitor identification code
+### 1.8 Calculate annual mean
+
+A **summary statistic** that may be of interest to researchers is the mean measurement for each location for a specific period of time. For this example, the mean concentration for each monitoring location for all observations recorded in 2021 will be calculated. To do so, a unique identification code must be created for each monitoring location. This `$Monitor.ID` can be created by concatenating the state code, county code, and site number.
 
 ```{r}
 pm_sf$Monitor.ID = paste0(pm_sf$State.Code,
@@ -303,88 +317,97 @@ pm_sf$Monitor.ID = paste0(pm_sf$State.Code,
                           pm_sf$Site.Num)
 ```
 
-#### 1.9.1 Check the number of unique monitor codes
+The number of unique monitor identification codes should be equal to the number of unique geometries.
 
 ```{r}
 length(unique(pm_sf$Monitor.ID)) == length(unique(pm_sf$geometry))
 ```
 
-### 1.10 Calculate annual mean concentration for monitor locations
+Functions and syntax from the `dplyr` package will be used to calculate the mean PM~2.5~ concentration measured at each monitoring location.
+
+::: callout-note
+Including `State.Name` in the `group_by()` arguement will retain the state name for each monitoring location.
+:::
 
 ```{r, warning=FALSE, message=FALSE}
 pm_mean =
   pm_sf %>%
   group_by(Monitor.ID, State.Name) %>%
-  summarise(Annual.Mean=mean(Arithmetic.Mean))
+  summarise(Annual.Mean = mean(Arithmetic.Mean))
 ```
 
-### 1.11 Plot annual mean concentrations
+Inspect the summary statistics of mean PM~2.5~ concentration measurements.
+
+```{r}
+summary(pm_mean$Annual.Mean); sd(pm_mean$Annual.Mean)
+```
+
+Recreate the plot of air pollution monitoring locations, but color each point according to the annual mean concentration of PM~2.5~ at each location.
 
 ```{r}
 ggplot()+
-  geom_sf(data=pm_mean,
-          aes(color=Annual.Mean))+
-  scale_color_viridis_b(expression("PM2.5 Concentration (µg/m"^3*")"))+
-  ggtitle("Annual Mean PM2.5 Concentration at EPA Monitoring Locations")+
+  geom_sf(data = pm_mean,
+          aes(color = Annual.Mean))+
+  scale_color_viridis_b(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
+  ggtitle("Mean Particulate Matter Concentration at EPA Monitoring Locations")+
   theme_pubr(legend="bottom")+
   theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
 
-### 1.12 Explore monitors with highest mean concentrations
+### 1.9 Exploratory analysis: highest annual means
 
-#### 1.12.1 Identify three monitors with highest concentrations
+The previous plot shows three monitoring locations in California with very high (\> 20 ug/m^3^) mean concentrations of particulate matter. Create a subset of the `pm_sf` data set with only these three monitors.
+
+First, identify the unique monitor identification codes.
 
 ```{r}
 max_monitors =
   pm_mean %>%
   arrange(Annual.Mean) %>%
-  tail(n=3)
-```
-
-#### 1.12.2 Create variable with these monitors' monitor IDs
-
-```{r}
+  tail(n = 3)
 max_monitors_id = max_monitors$Monitor.ID
 ```
 
-#### 1.12.3 Create subset of data with only these monitors
+Create a subset of `pm_sf` according to the monitor identification codes in `max_monitors_id`.
 
 ```{r}
 pm_max = subset(pm_sf,
                 subset = Monitor.ID == max_monitors_id)
 ```
 
-#### 1.12.4 Plot time trend of observations at these monitor locations
+Together, the `ggplot2::geom_line()` and `ggplot2::facet_wrap()` arguments can be used to compare all the measurements from each of the three highest monitoring locations in a single plot.
 
 ```{r}
-ggplot(data=pm_max,
-       aes(x=Date.Local,
-           y=Arithmetic.Mean,
-           group=Monitor.ID,
-           color=Monitor.ID))+
+ggplot(data = pm_max,
+       aes(x = Date.Local,
+           y = Arithmetic.Mean,
+           group = Monitor.ID,
+           color = Monitor.ID))+
   geom_line()+
   ggtitle("Highest Annual Mean Concentrations of PM2.5")+
-  facet_wrap(~Monitor.ID,
+  facet_wrap(~ Monitor.ID,
              nrow = 3)+
   xlab("Date")+
-  ylab(expression("PM2.5 Concentration (µg/m"^3*")"))+
+  ylab(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
   theme_pubr(legend = "bottom")+
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-#### 1.12.5 Box plot to compare observations at these monitor locations
+Alternatively, the `ggplot2::geom_boxplot()` function compares the median, interquartile range, and outliers of the three monitors' measurements.
 
 ```{r}
-ggplot(data=pm_max,
-       aes(x=Monitor.ID,
-           y=Arithmetic.Mean,
-           fill=Monitor.ID))+
+ggplot(data = pm_max,
+       aes(x = Monitor.ID,
+           y = Arithmetic.Mean,
+           fill = Monitor.ID))+
   geom_boxplot()+
   xlab("Monitor ID")+
-  ylab(expression("PM2.5 Concentration (µg/m"^3*")"))+
-  theme_pubr(legend="none")
+  ylab(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
+  theme_pubr(legend = "none")
 ```
+
+This concludes section 1. Point Data with `sf`. Unit 2 of this vignette series will explore more specific analyses that can be conducted with `sf` point data.
 
 # ============= BREAK ==============
 
@@ -427,9 +450,9 @@ download.file(url_noaa,
 ```
 
 ```{r, include = FALSE, eval=FALSE}
-###########################################
+################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
-###########################################
+################################################################################
 url_noaa = paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/",
                   year,
                   "/",
@@ -444,7 +467,9 @@ destination_noaa = paste0("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smo
                           month,
                           day,
                           ".zip")
-download.file(url_noaa, destination_noaa)
+download.file(url_noaa,
+              destination_noaa)
+################################################################################
 ```
 
 Unzip downloaded file.
@@ -454,11 +479,12 @@ unzip("/   YOUR FILE PATH   /noaa_smoke20230901.zip")
 ```
 
 ```{r, include=FALSE, eval=FALSE}
-###########################################
+################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
-###########################################
+################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke20230901.zip",
       exdir = "/Volumes/SET/Projects/EnviroTools/input/noaa")
+################################################################################
 ```
 
 Identify file name.
@@ -468,9 +494,9 @@ list.files("/   YOUR FILE PATH   /")
 ```
 
 ```{r, echo=FALSE}
-###########################################
+################################################################################
 list.files("/Volumes/SET/Projects/EnviroTools/input/noaa")
-###########################################
+################################################################################
 ```
 
 ### 2.1 Polygon data with `sf`
@@ -482,13 +508,9 @@ smoke = st_read("/   YOUR FILE PATH   /hms_smoke20230901.shp")
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
-###########################################
-#### test for change cache=FALSE
-################## bug ####################
+################################################################################
 smoke = st_read("/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp")
-#### .qmd or chunk fails to read data if sf:: is not included before st_read()
-###########################################
-###########################################
+################################################################################
 ```
 
 #### 2.1.2 Inspect contents
@@ -514,12 +536,12 @@ smoke$Density = factor(smoke$Density,
 
 ```{r}
 ggplot()+
-  geom_sf(data=smoke,
-          aes(fill=Density))+
+  geom_sf(data = smoke,
+          aes(fill = Density))+
   scale_fill_manual("Smoke Density",
-                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
+                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
   ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend="bottom")+
+  theme_pubr(legend = "bottom")+
   theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
@@ -538,22 +560,22 @@ Union polygons by density type with new date column.
 smoke_density =
   smoke %>%
   group_by(Density) %>%
-  summarise(geometry=st_union(geometry),
-            Date=paste0(year,
-                        month,
-                        day))
+  summarise(geometry = st_union(geometry),
+            Date = paste0(year,
+                          month,
+                          day))
 ```
 
 Plot union-ed polygons.
 
 ```{r}
 ggplot()+
-  geom_sf(data=smoke_density,
-          aes(fill=Density))+
+  geom_sf(data = smoke_density,
+          aes(fill = Density))+
   scale_fill_manual("Smoke Density",
-                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
+                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
   ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend="bottom")+
+  theme_pubr(legend = "bottom")+
   theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
@@ -575,13 +597,14 @@ download.file(url_states,
 ```
 
 ```{r, include = FALSE, eval=FALSE}
-###########################################
+################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
-###########################################
+################################################################################
 url_states = "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
 destination_states = "/Volumes/SET/Projects/EnviroTools/input/states/states.zip"
 download.file(url_states,
               destination_states)
+################################################################################
 ```
 
 Unzip downloaded data.
@@ -591,11 +614,12 @@ unzip("/   YOUR FILE PATH   /states.zip")
 ```
 
 ```{r, include=FALSE, eval=FALSE}
-###########################################
+################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
-###########################################
+################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/states/states.zip",
       exdir = "/Volumes/SET/Projects/EnviroTools/input/states")
+################################################################################
 ```
 
 Identify file name.
@@ -605,9 +629,9 @@ list.files("/   YOUR FILE PATH   /")
 ```
 
 ```{r, echo=FALSE}
-###########################################
+################################################################################
 list.files("/Volumes/SET/Projects/EnviroTools/input/states")
-###########################################
+################################################################################
 ```
 
 Import data.
@@ -617,9 +641,9 @@ states = st_read("/   YOUR FILE PATH   /cb_2018_us_state.shp")
 ```
 
 ```{r, include=FALSE}
-###########################################
+################################################################################
 states = st_read("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
-###########################################
+################################################################################
 ```
 
 Inspect United States polygons.
@@ -649,7 +673,7 @@ Plot contiguous United States boundaries.
 
 ```{r}
 ggplot()+
-  geom_sf(data=conus)+
+  geom_sf(data = conus)+
   ggtitle("Contiguous United States Boundaries")+
   theme_pubr()+
   theme(plot.title = element_text(hjust = 0.5))+
@@ -730,10 +754,10 @@ states_t = vect("/   YOUR FILE PATH   /cb_2018_us_state_500k.shp")
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
-###########################################
+################################################################################
 smoke_t = vect("/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp")
 states_t = vect("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
-###########################################
+################################################################################
 ```
 
 #### 2.2.2 Inspect contents
@@ -907,9 +931,9 @@ download.file(url_narr,
 ```
 
 ```{r, include = FALSE, eval=FALSE}
-###########################################
+################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
-###########################################
+################################################################################
 url_narr = paste0("https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
                   year,
                   ".nc")
@@ -918,6 +942,7 @@ destination_narr = paste0("/Volumes/SET/Projects/EnviroTools/input/narr/narr_air
                           ".nc")
 download.file(url_narr,
               destination_narr)
+################################################################################
 ```
 
 Identify file name.
@@ -927,9 +952,9 @@ list.files("/   YOUR FILE PATH   /")
 ```
 
 ```{r, echo=FALSE}
-###########################################
+################################################################################
 list.files("/Volumes/SET/Projects/EnviroTools/input/narr")
-###########################################
+################################################################################
 ```
 
 ### 3.1 Import data with `terra`
