@@ -29,10 +29,10 @@ This vignette will introduce packages equipped to handle the various types of da
 
 -   Plotting individual and multiple data sets
 
-Requires revision: This vignette assumes users' understanding of R **coding principles**, such as basic functions `+ - * / =`, "variables", and `$indexing`. For a primer on R, see <https://cran.r-project.org/doc/manuals/R-intro.pdf>. The terminology/jargon used throughout the vignette assumes users' understanding of primary spatial data concepts, such as the definitions of point, polygon, and raster data types. For more information on data types, see [1. Simple Features for R](https://r-spatial.github.io/sf/articles/sf1.html#what-is-a-feature) for a primer on point and polygon data types, and see [Introduction to Raster Data](https://datacarpentry.org/organization-geospatial/01-intro-raster-data) for a primer on raster data.
+Requires revision: This vignette assumes users' understanding of basic R syntax and functions. For a primer on R, see <https://cran.r-project.org/doc/manuals/R-intro.pdf>. The terminology/jargon used throughout the vignette also assumes users' understanding of primary spatial data concepts, such as the definitions of point, polygon, and raster data types. For more information on data types, see [1. Simple Features for R](https://r-spatial.github.io/sf/articles/sf1.html#what-is-a-feature) for a primer on point and polygon data types, and see [Introduction to Raster Data](https://datacarpentry.org/organization-geospatial/01-intro-raster-data) for a primer on raster data.
 
 ::: callout-important
-The exploratory analyses performed in this vignette are designed for educational purposes only. The results of the following analyses are not peer-reviewed findings, nor do they attempt to answer any hypotheses.
+The exploratory analyses performed in this vignette are designed for educational purposes only. The results of the following analyses are not peer-reviewed findings, nor are they based on any hypotheses.
 
 Additionally, the **views/opinions** conveyed in this vignette reflect the **views/opinions** of the authors alone, and do not reflect the **views/opinions** of the National Institutes of Health (NIH) or the National Institute of Environmental Health Sciences (NIEHS).
 :::
@@ -44,7 +44,7 @@ Additionally, the **views/opinions** conveyed in this vignette reflect the **vie
 The exploratory analyses performed in this vignette utilize free and publicly available spatial data. The code is designed to access each specific file used for the exploratory analyses, but a description of each data source and data set is available below.
 
 | Data                                | Data Type | Producer                                               | Link                                                                                        |
-|----------------|----------------|----------------|--------------------------|
+|-----------------|----------|-----------------|--------------------|
 | PM~2.5~ Daily Observations          | Point     | Environmental Protection Agency (EPA)                  | <https://aqs.epa.gov/aqsweb/airdata/download_files.html>                                    |
 | Wildfire Smoke Plumes               | Polygon   | National Oceanic and Atmospheric Administration (NOAA) | <https://www.ospo.noaa.gov/Products/land/hms.html>                                          |
 | United States Cartographic Boundary | Polygon   | United States Census Bureau                            | <https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html> |
@@ -109,7 +109,7 @@ download.file(url_epa,
 The file downloaded from the EPA website is a `.zip` file. Zip files need to be unzipped (decompressed) in order to access the data within. Unzip the EPA air pollution file with `utils::unzip()`.
 
 ::: callout-warning
-Unzipping a `.zip` file will decompress the contents within. Spatial data sets can be very large (ie. 1GB \<), so check the size of the data before unzipping on your machine.
+Unzipping a `.zip` file will decompress the contents within. Spatial data sets can be very large (ie. > 1GB ), so check the size of the data before unzipping on your machine.
 :::
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
@@ -355,49 +355,72 @@ ggplot()+
   grids()
 ```
 
-### 1.9 Exploratory analysis: highest annual means
+### 1.9 Compare highest annual means
 
-The previous plot shows three monitoring locations in California with very high (\> 20 ug/m^3^) mean concentrations of particulate matter. Create a subset of the `pm_sf` data set with only these three monitors.
+The previous plot shows three monitoring locations in California with very high (\> 20 ug/m^3^) mean concentrations of particulate matter. To investigate the differences between the highest and lowest annual mean measurements, create a subset of the `pm_sf` data set with only these six monitors.
 
 First, identify the unique monitor identification codes.
 
 ```{r}
+min_monitors =
+  pm_mean %>%
+  arrange(Annual.Mean) %>%
+  head(n = 3)
+
 max_monitors =
   pm_mean %>%
   arrange(Annual.Mean) %>%
   tail(n = 3)
-max_monitors_id = max_monitors$Monitor.ID
+
+min_max_monitors_id = c(min_monitors$Monitor.ID,
+                        max_monitors$Monitor.ID)
 ```
 
-Create a subset of `pm_sf` according to the monitor identification codes in `max_monitors_id`.
+Create a subset of `pm_sf` according to the monitor identification codes in `min_max_monitors_id`.
 
 ```{r}
-pm_max = subset(pm_sf,
-                subset = Monitor.ID == max_monitors_id)
+pm_min_max = subset(pm_sf,
+                subset = Monitor.ID == min_max_monitors_id)
 ```
 
-Together, the `ggplot2::geom_line()` and `ggplot2::facet_wrap()` arguments can be used to compare all the measurements from each of the three highest monitoring locations in a single plot.
+The `ggplot2::geom_line()` argument can be used to plot all measurements from each of the highest and lowest monitoring locations in a single plot.
 
 ```{r}
-ggplot(data = pm_max,
+ggplot(data = pm_min_max,
        aes(x = Date.Local,
            y = Arithmetic.Mean,
            group = Monitor.ID,
            color = Monitor.ID))+
   geom_line()+
-  ggtitle("Highest Annual Mean Concentrations of PM2.5")+
-  facet_wrap(~ Monitor.ID,
-             nrow = 3)+
+  ggtitle("Minimum and Maximum Annual Mean Concentrations of PM2.5")+
   xlab("Date")+
   ylab(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
   theme_pubr(legend = "bottom")+
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Alternatively, the `ggplot2::geom_boxplot()` function compares the median, interquartile range, and outliers of the three monitors' measurements.
+Adding the `ggplot2::facet_wrap()` argument creates individual plots for each monitoring location.
 
 ```{r}
-ggplot(data = pm_max,
+ggplot(data = pm_min_max,
+       aes(x = Date.Local,
+           y = Arithmetic.Mean,
+           group = Monitor.ID,
+           color = Monitor.ID))+
+  geom_line()+
+  ggtitle("Minimum and Maximum Annual Mean Concentrations of PM2.5")+
+  facet_wrap(~ Monitor.ID,
+             ncol = 2)+
+  xlab("Date")+
+  ylab(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
+  theme_pubr(legend = "bottom")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Alternatively, the `ggplot2::geom_boxplot()` function compares the median, interquartile range, and outliers of the monitors' measurements.
+
+```{r}
+ggplot(data = pm_min_max,
        aes(x = Monitor.ID,
            y = Arithmetic.Mean,
            fill = Monitor.ID))+
@@ -409,13 +432,15 @@ ggplot(data = pm_max,
 
 This concludes section 1. Point Data with `sf`. Unit 2 of this vignette series will explore more specific analyses that can be conducted with `sf` point data.
 
-# ============= BREAK ==============
-
 ## 2. Polygon Data
 
-### 2.0 Access and download
+Wildfire smoke plume coverage data from the United States National Oceanic and Atmospheric Administration (NOAA) will be used to demonstrate **using** polygon data. This section will cover **using** polygon data with both the `sf` and `terra` packages, but the accessing, downloading, and unzipping of the data is the same for both packages.
 
-Define day, year, and month of interest
+### 2.0 Access, download, and unzip
+
+The website URL where the NOAA wildfire smoke plume data exists is date-specific, meaning there is a unique URL for each day's data. For the purpose of these exploratory analyses, wildfire smoke plume data from September 1, 2023 will be used.
+
+Define the `day`, `month`, and `year` variables according to the date of interest.
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide'}
 day = "01"
@@ -423,10 +448,9 @@ month = "09"
 year = "2023"
 ```
 
-Set link to data access URL and specify saving location.
+The `utils::download.file()` function downloads the file according to the defined URL and destination file.
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
-# specify the URL where data is stored based on date variables of interest
 url_noaa = paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/",
                   year,
                   "/",
@@ -437,14 +461,12 @@ url_noaa = paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Po
                   day,
                   ".zip")
 
-# specify where to save downloaded data
 destination_noaa = paste0("/   YOUR FILE PATH   /noaa_smoke",
                           year,
                           month,
                           day,
                           ".zip")
 
-# download the data
 download.file(url_noaa,
               destination_noaa)
 ```
@@ -472,7 +494,27 @@ download.file(url_noaa,
 ################################################################################
 ```
 
-Unzip downloaded file.
+The file downloaded from the NOAA website is a `.zip` file. Zip files need to be unzipped (decompressed) in order to access the data within. Unzip the NOAA wildfire smoke plume coverage file with `utils::unzip()`.
+
+::: callout-warning
+Unzipping a `.zip` file will decompress the contents within. Spatial data sets can be very large (ie. > 1GB), so check the size of the data before unzipping on your machine.
+:::
+
+```{r, warning=FALSE, message=FALSE, results=FALSE, eval=FALSE}
+unzip("/   YOUR FILE PATH   /noaa_smoke20230901.zip",
+      list = TRUE)
+```
+
+```{r, echo=FALSE}
+################################################################################
+unzip("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke20230901.zip",
+      list = TRUE)
+################################################################################
+```
+
+The numeric value size of each file is listed under `Length`.
+
+After inspecting the file sizes, unzip `noaa_smoke20230901.zip`.
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
 unzip("/   YOUR FILE PATH   /noaa_smoke20230901.zip")
@@ -487,7 +529,7 @@ unzip("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke20230901.zip",
 ################################################################################
 ```
 
-Identify file name.
+Inspecting the file with `utils::unzip(list = TRUE)` returned the size of the file, but also the **name of the actual data file of interest** (`hms_smoke20230901.shp`). The desired data file can also be identified by using `list.files()`.
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
 list.files("/   YOUR FILE PATH   /")
@@ -499,44 +541,96 @@ list.files("/Volumes/SET/Projects/EnviroTools/input/noaa")
 ################################################################################
 ```
 
+Listing the contents of the unzipped file reveals four individual files. The data to be imported is stored in the `hms_smoke20230901.shp`, but the other files contain important reference information for the data.
+
+::: callout-warning
+When using shapefiles, deleting any of the supporting files (ie. `*.dbf`, `*.prj`, or `*.shx`) will disrupt the importing of the data.
+:::
+
 ### 2.1 Polygon data with `sf`
+
+This section will focus on exploratory analyses with polygon data using the `sf` package.
 
 #### 2.1.1 Import
 
+Now that the contents of `hms_smoke20230901.zip` have been saved on your machine and `hms_smoke20230901.shp` has been identified as the data set of interest, import the data with `sf::st_read()`.
+
+::: callout-note
+Although the supporting files are required to import a shapefile, only the file ending in `.shp` needs to be imported
+:::
+
 ```{r, eval=FALSE}
-smoke = st_read("/   YOUR FILE PATH   /hms_smoke20230901.shp")
+smoke_sf = st_read("/   YOUR FILE PATH   /hms_smoke20230901.shp")
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
 ################################################################################
-smoke = st_read("/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp")
+smoke_sf = st_read("/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp")
 ################################################################################
 ```
 
-#### 2.1.2 Inspect contents
+Unlike the `daily_88101_2021.csv` data, importing the `hms_smoke20230901.shp` with `sf::st_read()` did not return a `Warning:` message. This is because the `.shp` file is already a spatially-enabled object, and does not need to be converted to one.
+
+#### 2.1.2 Inspect structure
+
+Inspect the structure of `smoke_sf` to see its class, column names, column classes, and the first two (specified by `vec.len = 2`) data points.
 
 ```{r}
-str(smoke); st_crs(smoke)
+str(smoke_sf,
+    vec.len = 2)
 ```
 
-#### 2.1.3 Inspect parameter of interest
+As mentioned previously, the `smoke_sf` data set was imported as a spatially-enabled object. This is reflected by the data set having classes of `sf` and `data.frame`.
+
+#### 2.1.3 Reclassify
+
+The parameters of interest in this data set are `$Density`, which categorizes each wildfire smoke plume as "Light", "Medium", or "Heavy", and `$geometry`, which identifies the boundary of each smoke plume polygon.
+
+The class of `$Density`, however, is `character`.
 
 ```{r}
-unique(smoke$Density); class(smoke$Density)
+class(smoke_sf$Density)
 ```
 
-#### 2.1.4 Reclassify parameter of interest
+When performing analyses on parameters with discrete, labelled classes, it is advised to convert the parameter to class `factor`.
 
 ```{r}
-smoke$Density = factor(smoke$Density,
-                       levels = c("Light", "Medium", "Heavy"))
+smoke_sf$Density = factor(smoke_sf$Density,
+                          levels = c("Light", "Medium", "Heavy"))
 ```
 
-#### 2.1.5 Plot polygons with `ggplot2`
+Check the class of `$Density` again to ensure proper reclassification.
+
+```{r}
+class(smoke_sf$Density)
+```
+
+#### 2.1.4 Coordinate reference system and projection
+
+**It is important to know the coordinate reference system and projection of the spatial data that is being used.** For a detailed explanation of coordinate reference systems and projections, please see **LINK**.
+
+Check the coordinate reference system.
+
+```{r}
+st_crs(smoke_sf)
+```
+
+`smoke_sf` already has a defined coordinate reference system, WGS 84. As with the air pollution data, `smoke_sf` can be projected (transformed) to a different projected reference system that adequately visually represents the study area of interest.
+
+Project the wildfire smoke data to the Albers Equal Area projected coordinate system (EPSG code: 5070).
+
+```{r}
+smoke_sf = st_transform(smoke_sf, 
+                        5070)
+```
+
+#### 2.1.5 Plot (single)
+
+With the parameter of interest, coordinate reference system, and projection **checked and converted**, plot the wildfire smoke plume polygons with `ggplot2::ggplot()`.
 
 ```{r}
 ggplot()+
-  geom_sf(data = smoke,
+  geom_sf(data = smoke_sf,
           aes(fill = Density))+
   scale_fill_manual("Smoke Density",
                     values = c("lightgreen", "lightgoldenrod", "tomato"))+
@@ -546,19 +640,21 @@ ggplot()+
   grids()
 ```
 
-#### 2.1.6 Combine polygons based on density classification
+The wildfire smoke plume polygons are clearly visible and colored according to their individual smoke density, which is helpful for visualizing the data.
 
-Create variable with density types.
+The plot, however, can be difficult to interpret for two main reasons. The first reason is that there are multiple polygons for each smoke density classification. Multiple polygon borders and overlapping polygons of the same smoke density can be confusing. To make plotting the polgyons more clear and easy to interpret, individual polygons can be combined according to the smoke plume density class.
+
+::: callout-warning
+**Overlapping polygons with the same smoke density classification can be conveying different information, including satellite travelling direction or time of collection. For the purposes of these exploratory analyses, the satellite travelling direction and time of collection will be ignored.**
+:::
+
+#### 2.1.6 Union
+
+Individual polygons can be unioned (combined) to one multipolygon with `sf::st_union()`. Adding the `Date = ...` argument within the `dplyr::summarise()` function creates a date parameter in the new `smoke_sf_density` data set according to the year, month, and day of the data (defined in step 2.0 Access, download, and. unzip).
 
 ```{r}
-dens = unique(smoke$Density)
-```
-
-Union polygons by density type with new date column.
-
-```{r}
-smoke_density =
-  smoke %>%
+smoke_sf_density =
+  smoke_sf %>%
   group_by(Density) %>%
   summarise(geometry = st_union(geometry),
             Date = paste0(year,
@@ -566,11 +662,17 @@ smoke_density =
                           day))
 ```
 
-Plot union-ed polygons.
+**Inspecting the structure of `smoke_sf_density` shows three multipolygons of class `sf` with the date.**
+
+```{r}
+smoke_sf_density
+```
+
+Plotting `smoke_sf_density` shows that the overlapping borders have been dissolved, and only one polygon is used to represent each smoke density classification.
 
 ```{r}
 ggplot()+
-  geom_sf(data = smoke_density,
+  geom_sf(data = smoke_sf_density,
           aes(fill = Density))+
   scale_fill_manual("Smoke Density",
                     values = c("lightgreen", "lightgoldenrod", "tomato"))+
@@ -580,18 +682,21 @@ ggplot()+
   grids()
 ```
 
-#### 2.1.6 Import United States state boundary polygon data
+The second reason why the original `smoke_sf` plot was difficult to interpret is the lack of geographical context. The grid lines help provide latitude and longitude reference, but physical land or geopolitical borders provide better context when plotting large scale spatial data. To provide such context to the wildfire smoke plume polygons, the United States state border polygons will be added to the plot.
 
-Set link to data access URL and specify saving location.
+#### 2.1.7 Plot (multiple)
+
+Accessing, downloading, unzipping, and importing the United States state border data follows the same steps as the wildfire smoke plume coverage data.
+
+::: callout-note
+The steps for accessing, downloading, unzipping, and importing will not be explained in detail. Refer to sections 2.0 Access, download, and unzip, and 2.1.1 Import for detailed steps.
+:::
 
 ```{r, eval=FALSE}
-# specify the URL where data is stored
 url_states = "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
 
-# specify where to save downloaded data
 destination_states = "/   YOUR FILE PATH   /states.zip"
 
-# download the data
 download.file(url_states,
               destination_states)
 ```
@@ -607,7 +712,19 @@ download.file(url_states,
 ################################################################################
 ```
 
-Unzip downloaded data.
+```{r, eval=FALSE}
+unzip("/   YOUR FILE PATH   /states.zip",
+      list = TRUE)
+```
+
+```{r, echo=FALSE}
+################################################################################
+## NEED TO CHANGE eval=TRUE for rendering
+################################################################################
+unzip("/Volumes/SET/Projects/EnviroTools/input/states/states.zip",
+      list = TRUE)
+################################################################################
+```
 
 ```{r, eval=FALSE}
 unzip("/   YOUR FILE PATH   /states.zip")
@@ -622,8 +739,6 @@ unzip("/Volumes/SET/Projects/EnviroTools/input/states/states.zip",
 ################################################################################
 ```
 
-Identify file name.
-
 ```{r, eval=FALSE}
 list.files("/   YOUR FILE PATH   /")
 ```
@@ -634,119 +749,132 @@ list.files("/Volumes/SET/Projects/EnviroTools/input/states")
 ################################################################################
 ```
 
-Import data.
-
 ```{r, eval=FALSE}
 states = st_read("/   YOUR FILE PATH   /cb_2018_us_state.shp")
 ```
 
 ```{r, include=FALSE}
 ################################################################################
-states = st_read("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
+states_sf = st_read("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
 ################################################################################
 ```
 
-Inspect United States polygons.
+With the state border data imported, inspect the structure of `states_sf`.
 
 ```{r}
-str(states); st_crs(states)
+str(states_sf,
+    vec.len = 2)
 ```
 
-Subset to contiguous United States.
+For the purpose of these exploratory analyses, only the coterminous (CONUS) United States will be used. Subset to only the coterminous United States.
 
 ```{r}
-# define list of state and territories to be removed
 remove = c("Alaska",
-            "Hawaii",
-            "Puerto Rico",
-            "United States Virgin Islands",
-            "Commonwealth of the Northern Mariana Islands",
-            "Guam",
-            "American Samoa")
+           "Hawaii",
+           "Puerto Rico",
+           "United States Virgin Islands",
+           "Commonwealth of the Northern Mariana Islands",
+           "Guam",
+           "American Samoa")
 
-# remove states and territories
-conus = subset(states,
-               !NAME %in% remove)
+conus_sf = subset(states_sf,
+                  !NAME %in% remove)
 ```
 
-Plot contiguous United States boundaries.
+Check the coordinate reference system.
+
+```{r}
+st_crs(conus_sf)
+```
+
+::: callout-important
+When analyzing or plotting two different data sets together, it is important that both data sets have the same coordinate reference system and/or projected coordinate system.
+:::
+
+Project `conus_sf` to the Albers Equal Area projected coordinate system (EPSG code: 5070).
+
+```{r}
+conus_sf = st_transform(conus_sf,
+                        5070)
+```
+
+Plot CONUS boundaries.
 
 ```{r}
 ggplot()+
-  geom_sf(data = conus)+
+  geom_sf(data = conus_sf)+
   ggtitle("Contiguous United States Boundaries")+
   theme_pubr()+
   theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
 
-#### 2.1.7 Plot smoke plumes and state boundaries `sf`
+Now that both the wildfire smoke plume and CONUS polygons have been imported and prepared, ensure that the coordinate reference systems match.
 
 Set matching coordinate reference systems.
 
 ```{r, warning=FALSE}
-st_crs(smoke_density) = st_crs(conus)
-st_crs(smoke_density) == st_crs(conus)
+st_crs(smoke_sf_density) == st_crs(conus_sf)
 ```
 
-Set matching projections (USA Contiguous Albers Equal Area Conic).
+Plot `smoke_sf_density` and `conus_sf` in a single plot with `ggplot2::ggplot()`.
 
-```{r}
-smoke_density = st_transform(smoke_density,
-                             5070)
-conus = st_transform(conus,
-                     5070)
-```
-
-Create plot.
+::: callout-note
+Multiple data sets can be plotted in a single map by simply defining multiple `ggplot2::geom_sf()` arguments.
+:::
 
 ```{r}
 ggplot()+
-  geom_sf(data=smoke_density,
-          aes(fill=Density))+
+  geom_sf(data = smoke_sf_density,
+          aes(fill = Density))+
   scale_fill_manual("Smoke Density",
-                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
-  geom_sf(data=conus,
-          fill="transparent")+
+                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
+  geom_sf(data = conus_sf,
+          fill = "transparent")+
   ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend="bottom")+
+  theme_pubr(legend = "bottom")+
   theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
 
-#### 2.1.8 Crop smoke polygons to contiguous United States bounding box
+#### 2.1.8 Crop
+
+This new plot better shows the distribution of wildfire smoke plumes over the coterminous United States, but contains a lot of data located outside of the study area. The `sf::st_crop()` function can be used to limit the wildfire smoke plume polygons to the bounding box surrounding the CONUS polygons.
 
 ```{r, warning=FALSE}
-smoke_crop = st_crop(smoke_density,
-                     conus)
+smoke_sf_crop = st_crop(smoke_sf_density,
+                        conus_sf)
 ```
 
-#### 2.1.9 Plot cropped smoke polygons.
+Plot the cropped polygon data with the CONUS borders.
 
 ```{r}
 ggplot()+
-  geom_sf(data=smoke_crop,
-          aes(fill=Density))+
+  geom_sf(data = smoke_sf_crop,
+          aes(fill = Density))+
   scale_fill_manual("Smoke Density",
-                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
-  geom_sf(data=conus,
-          fill="transparent")+
+                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
+  geom_sf(data = conus_sf,
+          fill = "transparent")+
   ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend="bottom")+
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.line = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text = element_blank())+
+  theme_pubr(legend ="bottom")+
+  theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
 
-# ============= BREAK ==============
+This concludes section 2.1 Polygon Data with `sf`. Unit 2 of this vignette series will explore more specific analyses that can be conducted with `sf` polygon data.
 
 ### 2.2 Polygon data with `terra`
 
-#### 2.2.0 Access and download same as with `sf`
+This section will focus on exploratory analyses with polygon data using the `terra` package. Many of the functions from section 2.1 Polygon data with `sf` will be repeated with matching or similar functions from `terra`.
 
-#### 2.2.1 Import (wildfire and boundary data)
+::: callout-note
+Accessing, downloading, and unzipping of data is the same as for `sf` and will not be repeated. Refer to section 2.0 Access, download, and unzip for detailed instructions.
+:::
+
+#### 2.2.1 Import
+
+Import both the wildfire smoke plume coverage data and the United States state border data from your machine. The `terra::vect()` function is used to import vector data (point, line, polygon) as a `SpatVector` object. For detailed description of `SpatVector` objects, see [Description of the methods in the terra pacakge](https://search.r-project.org/CRAN/refmans/terra/html/terra-package.html).
 
 ```{r, eval=FALSE}
 smoke_t = vect("/   YOUR FILE PATH   /hms_smoke20230901.shp")
@@ -760,62 +888,115 @@ states_t = vect("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state
 ################################################################################
 ```
 
-#### 2.2.2 Inspect contents
+#### 2.2.2 Inspect structure
+
+A function does not need to be specified in order to inspect the contents of `SpatVector` object.
 
 ```{r}
-str(smoke_t); str(states_t)
+smoke_t; states_t
 ```
 
-#### 2.2.3 Set up parameters of interest
+#### 2.2.3 Reclassify
+
+The parameters of interest in this data set is `$Density`, which categorizes each wildfire smoke plume as "Light", "Medium", or "Heavy".
+
+```{r}
+class(smoke_t$Density)
+```
+
+As with the `sf` package, `$Density` needs to be converted to to a factor because it contains discrete, labelled classes.
 
 ```{r}
 smoke_t$Density = factor(smoke_t$Density,
                          levels=c("Light", "Medium", "Heavy"))
+```
+
+Additionally, the `states_t` data set can be subsetted to only the coterminous United States.
+
+```{r}
 conus_t = subset(states_t,
                  !states_t$NAME %in% remove)
 ```
 
-#### 2.2.4 Set matching coordinate reference systems and projections
+#### 2.2.4 Coordinate reference system and projection
+
+Check the coordinate reference systems of `smoke_t` and `conus_t` data sets.
 
 ```{r}
-crs(smoke_t) = crs(conus_t)
+crs(smoke_t,
+    describe = TRUE)
+crs(conus_t,
+    describe = TRUE)
+```
+
+Both data sets have previously defined coordinate reference systems, but they are different from each other. When analyzing and plotting multiple spatial data sets it is important that all have the same coordinate reference system. As the study area is still the coterminous United States, project both `smoke_t` and `conus_t` to the Albers Equal Area projected coordinate system (EPSG code: 5070).
+
+```{r}
 smoke_t = project(smoke_t,
                   "EPSG:5070")
 conus_t = project(conus_t,
                   "EPSG:5070")
 ```
 
-#### 2.2.5 Combine polygons based on density classification
+#### 2.2.5 Plot (multiple)
+
+**Plot both data sets together in one plot with `ggplot2::ggplot()`.**
+
+::: callout-note
+Notice the difference between the following code chunk and `Chunk 71` in 2.1.7 Plot (multiple). When plotting data from the `sf` and `terra` packages, the arguments added to `ggplot2::ggplot()` are different. `sf` data uses `+geom_sf()` while `terra` data uses `+geom_spatvector()`. Ensure the plotting function matches the data type and package used.
+:::
+
+```{r}
+ggplot()+
+  geom_spatvector(data = smoke_t,
+                  aes(fill = Density))+
+  scale_fill_manual("Smoke Density",
+                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
+  geom_spatvector(data = conus_t,
+                  fill = "transparent")+
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
+  theme_pubr(legend = "bottom")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  grids()
+```
+
+#### 2.2.5 Aggregate
+
+Individual polygons can be aggregated (combined) to one multipolygon with `terra::aggregate()`. The `by = "Density"` argument specifies that the polygons with the same density classification should be aggregated.
+
+:::callout-note
+**Certain R packages have functions with the same, or similar, names but have very different functionality (ie. `stats::aggregate()` and `terra::aggregate()`). When using functions that have common names across different packages, the package needs to be specified (example: `package::function()`).**
+:::
 
 ```{r}
 smoke_density_t = terra::aggregate(smoke_t,
-                                   by="Density",
-                                   dissolve=TRUE)
+                                   by = "Density",
+                                   dissolve = TRUE)
 ```
 
-New `smoke_density_t` is SpatVector with 3 geometries.
+The resulting `smoke_density_t` is a SpatVector with 3 geometries, one for each of the density classifications.
 
 ```{r}
 smoke_density_t
 ```
 
-#### 2.2.6 Plot smoke plumes and state boundaries `terra`
+Plot the aggregated wildfire smoke plume polygons and the CONUS borders with `ggplot2::ggplot()`.
 
 ```{r}
 ggplot()+
-  geom_spatvector(data=smoke_density_t,
-                  aes(fill=Density))+
+  geom_spatvector(data = smoke_density_t,
+                  aes(fill = Density))+
   scale_fill_manual("Smoke Density",
-                    values=c("lightgreen", "lightgoldenrod", "tomato"))+
-  geom_spatvector(data=conus_t,
-                  fill="transparent")+
+                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
+  geom_spatvector(data = conus_t,
+                  fill = "transparent")+
   ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend="bottom")+
+  theme_pubr(legend = "bottom")+
   theme(plot.title = element_text(hjust = 0.5))+
   grids()
 ```
 
-#### 2.2.7 Crop smoke data to state boundaries
+#### 2.2.6 Crop
 
 ```{r}
 smoke_density_crop_t = terra::crop(smoke_density_t,
@@ -838,7 +1019,7 @@ ggplot()+
         axis.text = element_blank())
 ```
 
-#### 2.2.8 Identify presence of smoke plumes in each state
+#### 2.2.7 Zonal statistics
 
 Identify where smoke polygons intersect state boundaries.
 
@@ -860,8 +1041,6 @@ Combine smoke plume coverage presence with state boundaries.
 conus_t = cbind(conus_t,
                 conus_smoke)
 ```
-
-#### 2.2.9 Compare presence of smoke plume coverage across states
 
 New variable with smoke density classifications as character.
 
