@@ -1,17 +1,27 @@
 ---
-title: "Spatial Analysis with Environmental Data in R"
-author: Mitchell Manware, Kyle P Messier
-format: html
-editor: visual
+title: Spatial Analysis with Environmental Data in R
+subtitle: Access, Import, and Primary Analyses
+authors: Mitchell Manware, Kyle P Messier
+format:
+  html:
+    toc: true
+    toc-title: Table of Contents
+    toc-depth: 4
+    toc-expand: TRUE
+editor: source
 ---
 
-# Unit 1: Access, Import, and Primary Analyses
+## 0. Introduction
 
-Environmental research relies on various types of spatial, temporal, and spatio-temporal data to accurately measure, predict, and model exposures.
+### 0.1 Motivation
 
-This vignette will introduce packages equipped to handle the various types of data often used in environmental research. The vignette will also show/teach how to perform various analyses for each unique type of spatial data. 
+Environmental research relies on various types of spatial, temporal, and spatio-temporal data to accurately measure, predict, and model exposures. This vignette will introduce R packages that are equipped to handle these various types of data, and will demonstrate how to access, import, and analyze each data type.
 
-This vignette will introduce functions and packages designed to handle various types of spatial data, and will teach users how to perform primary analyses for each. Primary analyses include:
+The terminology in this vignette assumes users' basic understanding of spatial data, including point, polygon, and raster data types. Please see [Simple Features for R](https://r-spatial.github.io/sf/articles/sf1.html) for more information on point and polygon data types, and [Introduction to Raster Data](https://datacarpentry.org/organization-geospatial/01-intro-raster-data) for more information on raster data.
+
+### 0.2 Objectives
+
+This vignette is designed to assist users in developing spatial analysis skills including:
 
 -   Downloading data from a URL
 
@@ -25,22 +35,12 @@ This vignette will introduce functions and packages designed to handle various t
 
 -   Plotting individual and multiple data sets
 
-The terminology in this vignette assumes users' basic understanding of spatial data, including point, polygon, and raster data types. Please see [1. Simple Features for R](https://r-spatial.github.io/sf/articles/sf1.html#what-is-a-feature) for more information on point and polygon data types, and  [Introduction to Raster Data](https://datacarpentry.org/organization-geospatial/01-intro-raster-data) for more information on raster data.
-
-::: callout-important
-The exploratory analyses performed in this vignette are designed for educational purposes only. The results of the following analyses are not peer-reviewed findings, nor are they based on any hypotheses.
-
-Additionally, the view and opinions expressed in this vignette reflect the views and opinions of the authors alone, and not those of the National Institutes of Health (NIH) or the National Institute of Environmental Health Sciences (NIEHS).
-:::
-
-## 0. Introduction
-
-### 0.1 Data Sources
+### 0.3 Data Sources
 
 The exploratory analyses performed in this vignette utilize free and publicly available spatial data. The code is designed to access each specific file used for the exploratory analyses, but a description of each data source and data set is available below.
 
 | Data                                | Data Type | Producer                                               | Link                                                                                        |
-|--------------|--------------|----------------|-----------------------------|
+|------------------|------------------|------------------|-------------------|
 | PM~2.5~ Daily Observations          | Point     | Environmental Protection Agency (EPA)                  | <https://aqs.epa.gov/aqsweb/airdata/download_files.html>                                    |
 | Wildfire Smoke Plumes               | Polygon   | National Oceanic and Atmospheric Administration (NOAA) | <https://www.ospo.noaa.gov/Products/land/hms.html>                                          |
 | United States Cartographic Boundary | Polygon   | United States Census Bureau                            | <https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html> |
@@ -48,7 +48,7 @@ The exploratory analyses performed in this vignette utilize free and publicly av
 
 : Exploratory analyses data sources
 
-### 0.2 Packages
+### 0.4 Packages
 
 Many different R packages can be used to create, import, analyze, and export spatial data. If you have not used these packages previously, they may not be installed on your machine. The following chunk of code installs and imports the required packages, so run the code before proceeding with the exploratory analyses.
 
@@ -57,7 +57,7 @@ Installing and importing new packages may required R to restart.
 :::
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
-vignette_packages = c("dplyr", "ggplot2", "ggpubr", "sf", "sftime",
+vignette_packages = c("dplyr", "ggplot2", "ggpubr", "sf",
                       "terra", "tidyterra", "utils")
 
 for(v in 1:length(vignette_packages)){
@@ -67,8 +67,20 @@ for(v in 1:length(vignette_packages)){
 }
 
 library(dplyr); library(ggplot2); library(ggpubr); library(sf);
-library(sftime); library(terra); library(tidyterra); library(utils)
+library(terra); library(tidyterra); library(utils)
 ```
+
+#### 0.4.1 `ggplot2`
+
+Add text about reference resources for `ggplot2` package.
+
+# 
+
+::: callout-important
+The exploratory analyses performed in this vignette are designed for educational purposes only. The results of the following analyses are not peer-reviewed findings, nor are they based on any hypotheses.
+
+Additionally, the view and opinions expressed in this vignette reflect the views and opinions of the authors alone, and not those of the National Institutes of Health (NIH) or the National Institute of Environmental Health Sciences (NIEHS).
+:::
 
 ## 1. Point Data with `sf`
 
@@ -422,8 +434,6 @@ ggplot(data = pm_min_max,
   theme_pubr(legend = "none")
 ```
 
-This concludes section 1. Point data with `sf`. Unit 2 of this vignette series will explore more specific analyses that can be conducted with `sf` point data.
-
 ## 2. Polygon Data
 
 Wildfire smoke plume coverage data from the United States National Oceanic and Atmospheric Administration (NOAA) will be used to demonstrate using polygon data. This section will cover polygon data with both the `sf` and `terra` packages separately, but the steps for accessing, downloading, and unzipping of the data is the same for both packages.
@@ -539,7 +549,7 @@ Listing the contents of the unzipped file reveals four individual files. The dat
 When using shapefiles, deleting any of the supporting files (ie. `*.dbf`, `*.prj`, or `*.shx`) will disrupt the importing of the data.
 :::
 
-### 2.1 Polygon data with `sf`
+### 2.1 Polygon Data with `sf`
 
 This section will focus on exploratory analyses with polygon data using the `sf` package.
 
@@ -854,9 +864,7 @@ ggplot()+
   grids()
 ```
 
-This concludes section 2.1 Polygon data with `sf`. Unit 2 of this vignette series will explore more specific analyses that can be conducted with `sf` polygon data.
-
-### 2.2 Polygon data with `terra`
+### 2.2 Polygon Data with `terra`
 
 This section will focus on exploratory analyses with polygon data using the `terra` package. Many of the functions from section 2.1 Polygon data with `sf` will be repeated with matching or similar functions from `terra`.
 
@@ -1074,7 +1082,7 @@ The first line of code initiates the `for` loop. In words, `for(d in 1:length(de
 
 The first block within the loop defines the plotting colors, stored in `color_values`, based on density classification. Presence of "Light" smoke will color the states green, the presence of "Medium" smoke will color the states yellow, and the presence of "Heavy" smoke will color the states red.
 
-The second block within the loop creates and prints the plots. The structure of the `ggplot2::ggplot()` function is extremely similar to the previous examples but uses the `for` loop indexing. The second argument in `geom_spatvector()` sets the `aes_string(fill = dens_c[d])`. This is telling the loop to color the states according to the TRUE/FALSE value in each of the smoke plume indicator columns. The `scale_fill_manual(values = color_values)` argument determines what colors to use based on the prevoiusly defined `color_values` variable.  
+The second block within the loop creates and prints the plots. The structure of the `ggplot2::ggplot()` function is extremely similar to the previous examples but uses the `for` loop indexing. The second argument in `geom_spatvector()` sets the `aes_string(fill = dens_c[d])`. This is telling the loop to color the states according to the TRUE/FALSE value in each of the smoke plume indicator columns. The `scale_fill_manual(values = color_values)` argument determines what colors to use based on the prevoiusly defined `color_values` variable.
 
 ```{r, warning=FALSE}
 for(d in 1:length(dens_c)){
@@ -1106,9 +1114,7 @@ for(d in 1:length(dens_c)){
 }
 ```
 
-This concludes section 2.2 Polygon data with `terra`. Unit 2 of this vignette series will explore more specific analyses that can be conducted with `terra` polygon data.
-
-## 3. Raster Data
+## 3. Raster Data with `terra`
 
 Air temperature (2m height) data from the United States National Oceanic and Atmospheric Administration's (NOAA) NCEP North American Regional Reanalysis data set will be used to demonstrate using raster data with the `terra` package.
 
@@ -1318,7 +1324,7 @@ The results of the following exploratory analyses will be more meaningful now th
 
 Similar to the unit conversion, calculating summary statistics is very simple with raster data. Performing a summary function, such as `mean()`, on a SpatRaster object will calculate the mean at each grid cell across all of the layers in `x`. Calculate the annual mean temperature and the range of temperatures at each grid cell for air temperature data in the coterminous United States.
 
-:::callout-note
+::: callout-note
 When applying functions to SpatRaster objects, using the `$` index and column name will create a new layer (ie. `data$mean = mean(data)`). Alternatively, results can be saved to a new variable (ie. `data_mean = mean(data)`).
 :::
 
@@ -1382,7 +1388,7 @@ ggplot()+
 
 ### 3.10 Reclassify
 
-Raster data can be reclassified in order to analyze or visualize continuous numeric data as discrete classes. As an exploratory analysis, reclassify the annual mean temperature data into three discrete classes: <10°C, 10°C - 20°C, >20°C.
+Raster data can be reclassified in order to analyze or visualize continuous numeric data as discrete classes. As an exploratory analysis, reclassify the annual mean temperature data into three discrete classes: \<10°C, 10°C - 20°C, \>20°C.
 
 The first step in the reclassification process is to create a matrix storing the "from", "to", and "becomes" values. As the names imply, the "from" and "to" values identify the discrete ranges to be reclassified, and "becomes" is the new value that data within this range will take (ie. "from" 0 "to" 5 "becomes" 1 means that values ranging from 0 to 5 will be reclassified as 1).
 
@@ -1402,7 +1408,7 @@ reclass = matrix(c(from,
                  ncol = 3)
 ```
 
-Reclassify annual mean temperatures according to the reclassification matrix. The `right = TRUE` argument indicates that intervals are open on the left and closed on the right (ie. (0,10] becomes 1).
+Reclassify annual mean temperatures according to the reclassification matrix. The `right = TRUE` argument indicates that intervals are open on the left and closed on the right (ie. (0,10\] becomes 1).
 
 ```{r}
 narr_reclass = classify(narr_crop_c$mean,
@@ -1443,4 +1449,4 @@ ggplot()+
         axis.text = element_blank())
 ```
 
-This concludes section 3. Raster Data. Unit 2 of this vignette series will explore more specific analyses that can be conducted with `terra` polygon data.
+## 4. References
