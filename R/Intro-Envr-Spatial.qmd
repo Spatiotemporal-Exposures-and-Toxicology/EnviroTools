@@ -24,25 +24,35 @@ This vignette will focus primarily on **spatial data**, but some aspects of temp
 Take the United States' coterminous geopolitical border as an example. The map clearly depicts the geographic locations of the United States' coterminous border, but does not specify when the measurements were taken or if they have changed over time. The map is therefore an example of spatial data.
 
 ```{r, include = FALSE, eval=TRUE}
-library(sf); library(ggplot2); library(ggpubr)
-map = st_read("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
-map = subset(map, subset = !NAME %in% c("Alaska",
-                                        "Hawaii",
-                                        "Puerto Rico",
-                                        "United States Virgin Islands",
-                                        "Commonwealth of the Northern Mariana Islands",
-                                        "Guam",
-                                        "American Samoa"))
+library(sf)
+library(ggplot2)
+library(ggpubr)
+map <- st_read(
+  "/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp"
+)
+map <- subset(map, subset = !NAME %in% c(
+  "Alaska",
+  "Hawaii",
+  "Puerto Rico",
+  "United States Virgin Islands",
+  "Commonwealth of the Northern Mariana Islands",
+  "Guam",
+  "American Samoa"
+))
 ```
 ```{r, echo = FALSE, eval = TRUE}
-ggplot()+
-  geom_sf(data = map,
-          fill = "transparent",
-          color = "black")+
-  theme_classic()+
-  theme(axis.line = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text = element_blank())
+ggplot() +
+  geom_sf(
+    data = map,
+    fill = "transparent",
+    color = "black"
+  ) +
+  theme_classic() +
+  theme(
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  )
 ```
 
 Although spatial, temporal, and spatio-temporal data are at the core of environmental health research, using these various data types can be challenging. This vignette is designed to introduce R packages that are equipped to handle spatial data, and will demonstrate how to access, import, and analyze each unique type of spatial data.
@@ -93,17 +103,24 @@ Installing and importing new packages may required R to restart.
 :::
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE}
-vignette_packages = c("dplyr", "ggplot2", "ggpubr", "sf",
-                      "terra", "tidyterra", "utils")
+vignette_packages <- c(
+  "dplyr", "ggplot2", "ggpubr", "sf",
+  "terra", "tidyterra", "utils"
+)
 
-for(v in 1:length(vignette_packages)){
-  if (vignette_packages[v] %in% installed.packages() == FALSE){
+for (v in seq_along(vignette_packages)) {
+  if (vignette_packages[v] %in% installed.packages() == FALSE) {
     install.packages(vignette_packages[v])
   }
 }
 
-library(dplyr); library(ggplot2); library(ggpubr); library(sf);
-library(terra); library(tidyterra); library(utils)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(sf)
+library(terra)
+library(tidyterra)
+library(utils)
 ```
 
 #### 0.5.1 `ggplot2` and `ggpubr`
@@ -131,22 +148,26 @@ Multiple chunks of code in this vignette will contain `/   YOUR FILE PATH   /`. 
 :::
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
-url_epa = "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
+url_epa <- "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
 
-destination_epa = "/   YOUR FILE PATH   /epa_data.zip"
+destination_epa <- "/   YOUR FILE PATH   /epa_data.zip"
 
-download.file(url_epa,
-              destination_epa)
+download.file(
+  url_epa,
+  destination_epa
+)
 ```
 
 ```{r, include = FALSE, eval=FALSE}
 ################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
 ################################################################################
-url_epa = "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
-destination_epa = "/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip"
-download.file(url_epa,
-              destination_epa)
+url_epa <- "https://aqs.epa.gov/aqsweb/airdata/daily_88101_2021.zip"
+destination_epa <- "/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip"
+download.file(
+  url_epa,
+  destination_epa
+)
 ################################################################################
 ```
 
@@ -158,13 +179,15 @@ Unzipping a `.zip` file will decompress the contents within. Spatial data sets c
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
 unzip("/   YOUR FILE PATH   /epa_data.zip",
-      list = TRUE)
+  list = TRUE
+)
 ```
 
 ```{r, echo=FALSE}
 ################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip",
-      list = TRUE)
+  list = TRUE
+)
 ################################################################################
 ```
 
@@ -181,7 +204,8 @@ unzip("/   YOUR FILE PATH   /epa_data.zip")
 ## NEED TO CHANGE eval=TRUE for rendering
 ################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/epa/epa_data.zip",
-      exdir = "/Volumes/SET/Projects/EnviroTools/input/epa")
+  exdir = "/Volumes/SET/Projects/EnviroTools/input/epa"
+)
 ################################################################################
 ```
 
@@ -206,12 +230,14 @@ list.files("/Volumes/SET/Projects/EnviroTools/input/epa")
 Now that the contents of `epa_data.zip` have been saved on your machine and `daily_88101_2021.csv` has been identified as the data set of interest, import the data with `sf::st_read()`.
 
 ```{r, eval=FALSE}
-pm = st_read("/   YOUR FILE PATH   /daily_88101_2021.csv")
+pm <- st_read("/   YOUR FILE PATH   /daily_88101_2021.csv")
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
 ################################################################################
-pm = st_read("/Volumes/SET/Projects/EnviroTools/input/epa/daily_88101_2021.csv")
+pm <- st_read(
+  "/Volumes/SET/Projects/EnviroTools/input/epa/daily_88101_2021.csv"
+)
 ################################################################################
 ```
 
@@ -225,7 +251,8 @@ Inspect the structure of `pm` to see its class, column names, column classes, an
 
 ```{r}
 str(pm,
-    vec.len = 2)
+  vec.len = 2
+)
 ```
 
 `pm` is a very large data set (590208 observations for 29 variables). Each of these variables conveys important information pertaining to air pollution monitoring, but not all of the variables will be utilized in the exploratory analyses.
@@ -237,16 +264,19 @@ Reduce the number of variables in `pm` with `subset()`. The `select =` argument 
 Re-running `str(pm)` after running the `subset` shows that all observations (n = 590208) of the desired variables (n = 8) have been retained.
 
 ```{r}
-pm = subset(pm, select = c(State.Code,
-                           County.Code,
-                           Site.Num,
-                           Latitude,
-                           Longitude,
-                           State.Name,
-                           Date.Local,
-                           Arithmetic.Mean))
+pm <- subset(pm, select = c(
+  State.Code,
+  County.Code,
+  Site.Num,
+  Latitude,
+  Longitude,
+  State.Name,
+  Date.Local,
+  Arithmetic.Mean
+))
 str(pm,
-    vec.len = 2)
+  vec.len = 2
+)
 ```
 
 ### 1.4 Reclassify
@@ -258,14 +288,15 @@ The class of the variable depends on the information stored within that variable
 The `as.` family of functions is useful for converting data to a different class. For the purposes of these exploratory analyses, only `$Date.Local` and `$Arithmetic.Mean` will be reclassified.
 
 ```{r}
-pm$Date.Local = as.Date(pm$Date.Local)
-pm$Arithmetic.Mean = as.numeric(pm$Arithmetic.Mean)
+pm$Date.Local <- as.Date(pm$Date.Local)
+pm$Arithmetic.Mean <- as.numeric(pm$Arithmetic.Mean)
 ```
 
 After running the `as.` functions, ensure that the variable has been converted to the desired class.
 
 ```{r}
-class(pm$Date.Local); class(pm$Arithmetic.Mean)
+class(pm$Date.Local)
+class(pm$Arithmetic.Mean)
 ```
 
 ### 1.5 Convert to `sf` object
@@ -275,14 +306,16 @@ With the variables of interest selected and reclassified, `pm` can be converted 
 The `sf::st_as_sf()` function creates a `$geometry` field based on the coordinates contained in the `pm` data frame. The columns containing the x and y coordinates are specified in the argument `coords = c()`.
 
 ```{r}
-pm_sf = st_as_sf(pm,
-                 coords = c("Longitude", "Latitude"))
+pm_sf <- st_as_sf(pm,
+  coords = c("Longitude", "Latitude")
+)
 ```
 
 After running the `sf::st_as_sf()` function, inspect the classes of `pm_sf` and `pm_sf$geometry` to see the changes.
 
 ```{r}
-class(pm_sf); class(pm_sf$geometry)
+class(pm_sf)
+class(pm_sf$geometry)
 ```
 
 You will notice that `class(pm_sf)` returned two values, `"sf"` and `"data.frame"`. This indicates that `pm_sf` contains non-spatial data and a spatially defined geometry.
@@ -298,7 +331,7 @@ st_crs(pm_sf)
 Running the function shows that `pm_sf` does have a coordinate reference system assigned. An `sf` object can be set to a coordinate reference system using the same function. For this example the World Geodesic System 1984 (WGS 84) will be used (EPSG code: 4326).
 
 ```{r}
-st_crs(pm_sf) = 4326
+st_crs(pm_sf) <- 4326
 st_crs(pm_sf)
 ```
 
@@ -307,8 +340,10 @@ After assigning a coordinate reference system to the data, the data can be proje
 The area of interest for these exploratory analyses is the the coterminous United States, so the Albers Equal Area projected coordinate system will be used (EPSG code: 5070).
 
 ```{r}
-pm_sf = st_transform(pm_sf,
-                     5070)
+pm_sf <- st_transform(
+  pm_sf,
+  5070
+)
 ```
 
 ### 1.7 Plot
@@ -318,32 +353,39 @@ Plotting spatial data is important for seeing space-varying patterns in the data
 Plot the point locations of each air pollution monitoring station included in the `pm_sf` data set with `ggplot2::ggplot()`. Identifying the data set to be plotted within the `ggplot2::geom_sf()` argument informs the function that the data is an `sf` object.
 
 ```{r}
-ggplot()+
-  geom_sf(data = pm_sf)+
-  ggtitle("EPA Air Pollution Monitoring Locations (2021)")+
-  theme_pubr()+
-  theme(plot.title = element_text(hjust = 0.5))+
+ggplot() +
+  geom_sf(data = pm_sf) +
+  ggtitle("EPA Air Pollution Monitoring Locations (2021)") +
+  theme_pubr() +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
 The plotted points show the distribution of monitoring locations throughout the Untied States, but do not convey any information about the concentrations of PM~2.5~ measurements at each location. Inspect the summary statistics of the parameter of interest before mapping.
 
 ```{r}
-summary(pm_sf$Arithmetic.Mean); sd(pm_sf$Arithmetic.Mean)
+summary(pm_sf$Arithmetic.Mean)
+sd(pm_sf$Arithmetic.Mean)
 ```
 
 Histograms help visualize the distribution of the data. Create a histogram by adding `ggplot2::geom_histogram()` as an argument to the `ggplot2::ggplot()` function.
 
 ```{r}
-ggplot(data = pm_sf,
-       aes(Arithmetic.Mean))+
-  geom_histogram(fill = "slateblue",
-                 binwidth = 5)+
-  ggtitle("Particulate Matter Measurements at EPA Monitoring Locations (2021)")+
-  xlab(expression("PM"[2.5]*" Concentration (µg/m"^3*")"))+
-  ylab("Number of Measurements")+
-  theme_pubr()+
-  theme(plot.title = element_text(hjust = 0.5))+
+ggplot(
+  data = pm_sf,
+  aes(Arithmetic.Mean)
+) +
+  geom_histogram(
+    fill = "slateblue",
+    binwidth = 5
+  ) +
+  ggtitle(
+    "Particulate Matter Measurements at EPA Monitoring Locations (2021)"
+  ) +
+  xlab(expression("PM"[2.5] * " Concentration (µg/m"^3 * ")")) +
+  ylab("Number of Measurements") +
+  theme_pubr() +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -352,9 +394,11 @@ ggplot(data = pm_sf,
 A summary statistic that may be of interest to researchers is the mean measurement for each location for a specific period of time. For this example, the mean concentration for each monitoring location for all observations recorded in 2021 will be calculated. To do so, a unique identification code must be created for each monitoring location. This `$Monitor.ID` can be created by concatenating the state code, county code, and site number.
 
 ```{r}
-pm_sf$Monitor.ID = paste0(pm_sf$State.Code,
-                          pm_sf$County.Code,
-                          pm_sf$Site.Num)
+pm_sf$Monitor.ID <- paste0(
+  pm_sf$State.Code,
+  pm_sf$County.Code,
+  pm_sf$Site.Num
+)
 ```
 
 The number of unique monitor identification codes should be equal to the number of unique geometries.
@@ -370,7 +414,7 @@ Including `State.Name` in the `group_by()` arguement will retain the state name 
 :::
 
 ```{r, warning=FALSE, message=FALSE}
-pm_mean =
+pm_mean <-
   pm_sf %>%
   group_by(Monitor.ID, State.Name) %>%
   summarise(Annual.Mean = mean(Arithmetic.Mean))
@@ -379,19 +423,26 @@ pm_mean =
 Inspect the summary statistics of mean PM~2.5~ concentration measurements.
 
 ```{r}
-summary(pm_mean$Annual.Mean); sd(pm_mean$Annual.Mean)
+summary(pm_mean$Annual.Mean)
+sd(pm_mean$Annual.Mean)
 ```
 
 Recreate the plot of air pollution monitoring locations, but color each point according to the annual mean concentration of PM~2.5~ at each location.
 
 ```{r}
-ggplot()+
-  geom_sf(data = pm_mean,
-          aes(color = Annual.Mean))+
-  scale_color_viridis_b(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
-  ggtitle("Mean Particulate Matter Concentration at EPA Monitoring Locations")+
-  theme_pubr(legend="bottom")+
-  theme(plot.title = element_text(hjust = 0.5))+
+ggplot() +
+  geom_sf(
+    data = pm_mean,
+    aes(color = Annual.Mean)
+  ) +
+  scale_color_viridis_b(
+    expression("PM"[2.5] * " Concentrations (µg/m"^3 * ")")
+  ) +
+  ggtitle(
+    "Mean Particulate Matter Concentration at EPA Monitoring Locations"
+  ) +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -402,71 +453,87 @@ The previous plot shows three monitoring locations in California with very high 
 First, identify the unique monitor identification codes.
 
 ```{r}
-min_monitors =
+min_monitors <-
   pm_mean %>%
   arrange(Annual.Mean) %>%
   head(n = 3)
 
-max_monitors =
+max_monitors <-
   pm_mean %>%
   arrange(Annual.Mean) %>%
   tail(n = 3)
 
-min_max_monitors_id = c(min_monitors$Monitor.ID,
-                        max_monitors$Monitor.ID)
+min_max_monitors_id <- c(
+  min_monitors$Monitor.ID,
+  max_monitors$Monitor.ID
+)
 ```
 
 Create a subset of `pm_sf` according to the monitor identification codes in `min_max_monitors_id`.
 
 ```{r}
-pm_min_max = subset(pm_sf,
-                subset = Monitor.ID == min_max_monitors_id)
+pm_min_max <- subset(pm_sf,
+  subset = Monitor.ID == min_max_monitors_id
+)
 ```
 
 The `ggplot2::geom_line()` argument can be used to plot all measurements from each of the highest and lowest monitoring locations in a single plot.
 
 ```{r}
-ggplot(data = pm_min_max,
-       aes(x = Date.Local,
-           y = Arithmetic.Mean,
-           group = Monitor.ID,
-           color = Monitor.ID))+
-  geom_line()+
-  ggtitle("Minimum and Maximum Annual Mean Concentrations of PM2.5")+
-  xlab("Date")+
-  ylab(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
-  theme_pubr(legend = "bottom")+
+ggplot(
+  data = pm_min_max,
+  aes(
+    x = Date.Local,
+    y = Arithmetic.Mean,
+    group = Monitor.ID,
+    color = Monitor.ID
+  )
+) +
+  geom_line() +
+  ggtitle("Minimum and Maximum Annual Mean Concentrations of PM2.5") +
+  xlab("Date") +
+  ylab(expression("PM"[2.5] * " Concentrations (µg/m"^3 * ")")) +
+  theme_pubr(legend = "bottom") +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
 Adding the `ggplot2::facet_wrap()` argument creates individual plots for each monitoring location.
 
 ```{r}
-ggplot(data = pm_min_max,
-       aes(x = Date.Local,
-           y = Arithmetic.Mean,
-           group = Monitor.ID,
-           color = Monitor.ID))+
-  geom_line()+
-  ggtitle("Minimum and Maximum Annual Mean Concentrations of PM2.5")+
-  facet_wrap(~ Monitor.ID,
-             ncol = 2)+
-  xlab("Date")+
-  ylab(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
-  theme_pubr(legend = "bottom")+
+ggplot(
+  data = pm_min_max,
+  aes(
+    x = Date.Local,
+    y = Arithmetic.Mean,
+    group = Monitor.ID,
+    color = Monitor.ID
+  )
+) +
+  geom_line() +
+  ggtitle("Minimum and Maximum Annual Mean Concentrations of PM2.5") +
+  facet_wrap(~Monitor.ID,
+    ncol = 2
+  ) +
+  xlab("Date") +
+  ylab(expression("PM"[2.5] * " Concentrations (µg/m"^3 * ")")) +
+  theme_pubr(legend = "bottom") +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
 Alternatively, the `ggplot2::geom_boxplot()` function compares the median, interquartile range, and outliers of the monitors' measurements.
 
 ```{r}
-ggplot(data = pm_min_max,
-       aes(x = Monitor.ID,
-           y = Arithmetic.Mean,
-           fill = Monitor.ID))+
-  geom_boxplot()+
-  xlab("Monitor ID")+
-  ylab(expression("PM"[2.5]*" Concentrations (µg/m"^3*")"))+
+ggplot(
+  data = pm_min_max,
+  aes(
+    x = Monitor.ID,
+    y = Arithmetic.Mean,
+    fill = Monitor.ID
+  )
+) +
+  geom_boxplot() +
+  xlab("Monitor ID") +
+  ylab(expression("PM"[2.5] * " Concentrations (µg/m"^3 * ")")) +
   theme_pubr(legend = "none")
 ```
 
@@ -481,54 +548,68 @@ The website URL where the NOAA wildfire smoke plume data exists is date-specific
 Define the `day`, `month`, and `year` variables according to the date of interest.
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide'}
-day = "01"
-month = "09"
-year = "2023"
+day <- "01"
+month <- "09"
+year <- "2023"
 ```
 
 The `utils::download.file()` function downloads the file according to the defined URL and destination file.
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
-url_noaa = paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/",
-                  year,
-                  "/",
-                  month,
-                  "/hms_smoke",
-                  year,
-                  month,
-                  day,
-                  ".zip")
+url_noaa <- paste0(
+  "https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons",
+  "/Shapefile/",
+  year,
+  "/",
+  month,
+  "/hms_smoke",
+  year,
+  month,
+  day,
+  ".zip"
+)
 
-destination_noaa = paste0("/   YOUR FILE PATH   /noaa_smoke",
-                          year,
-                          month,
-                          day,
-                          ".zip")
+destination_noaa <- paste0(
+  "/   YOUR FILE PATH   /noaa_smoke",
+  year,
+  month,
+  day,
+  ".zip"
+)
 
-download.file(url_noaa,
-              destination_noaa)
+download.file(
+  url_noaa,
+  destination_noaa
+)
 ```
 
 ```{r, include = FALSE, eval=FALSE}
 ################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
 ################################################################################
-url_noaa = paste0("https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/",
-                  year,
-                  "/",
-                  month,
-                  "/hms_smoke",
-                  year,
-                  month,
-                  day,
-                  ".zip")
-destination_noaa = paste0("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke",
-                          year,
-                          month,
-                          day,
-                          ".zip")
-download.file(url_noaa,
-              destination_noaa)
+url_noaa <- paste0(
+  "https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons",
+  "/Shapefile/",
+  year,
+  "/",
+  month,
+  "/hms_smoke",
+  year,
+  month,
+  day,
+  ".zip"
+)
+destination_noaa <- paste0(
+  "/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke",
+  year,
+  month,
+  day,
+  ".zip"
+)
+download.file(
+  url_noaa,
+  destination_noaa
+)
 ################################################################################
 ```
 
@@ -540,13 +621,15 @@ Unzipping a `.zip` file will decompress the contents within. Spatial data sets c
 
 ```{r, warning=FALSE, message=FALSE, results=FALSE, eval=FALSE}
 unzip("/   YOUR FILE PATH   /noaa_smoke20230901.zip",
-      list = TRUE)
+  list = TRUE
+)
 ```
 
 ```{r, echo=FALSE}
 ################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke20230901.zip",
-      list = TRUE)
+  list = TRUE
+)
 ################################################################################
 ```
 
@@ -563,7 +646,8 @@ unzip("/   YOUR FILE PATH   /noaa_smoke20230901.zip")
 ## NEED TO CHANGE eval=TRUE for rendering
 ################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/noaa/noaa_smoke20230901.zip",
-      exdir = "/Volumes/SET/Projects/EnviroTools/input/noaa")
+  exdir = "/Volumes/SET/Projects/EnviroTools/input/noaa"
+)
 ################################################################################
 ```
 
@@ -598,12 +682,14 @@ Although the supporting files are required to import a shapefile, only the file 
 :::
 
 ```{r, eval=FALSE}
-smoke_sf = st_read("/   YOUR FILE PATH   /hms_smoke20230901.shp")
+smoke_sf <- st_read("/   YOUR FILE PATH   /hms_smoke20230901.shp")
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
 ################################################################################
-smoke_sf = st_read("/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp")
+smoke_sf <- st_read(
+  "/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp"
+)
 ################################################################################
 ```
 
@@ -615,7 +701,8 @@ Inspect the structure of `smoke_sf` to see its class, column names, column class
 
 ```{r}
 str(smoke_sf,
-    vec.len = 2)
+  vec.len = 2
+)
 ```
 
 As mentioned previously, the `smoke_sf` data set was imported as a spatially-enabled object. This is reflected by the data set having classes of `sf` and `data.frame`.
@@ -633,8 +720,9 @@ class(smoke_sf$Density)
 When performing analyses on parameters with discrete, labelled classes, it is advised to convert the parameter to class `factor`.
 
 ```{r}
-smoke_sf$Density = factor(smoke_sf$Density,
-                          levels = c("Light", "Medium", "Heavy"))
+smoke_sf$Density <- factor(smoke_sf$Density,
+  levels = c("Light", "Medium", "Heavy")
+)
 ```
 
 Check the class of `$Density` again to ensure proper reclassification.
@@ -658,8 +746,10 @@ st_crs(smoke_sf)
 Project the wildfire smoke data to the Albers Equal Area projected coordinate system (EPSG code: 5070).
 
 ```{r}
-smoke_sf = st_transform(smoke_sf, 
-                        5070)
+smoke_sf <- st_transform(
+  smoke_sf,
+  5070
+)
 ```
 
 #### 2.1.5 Plot (single)
@@ -667,14 +757,17 @@ smoke_sf = st_transform(smoke_sf,
 With the data prepared, plot the wildfire smoke plume polygons with `ggplot2::ggplot()`.
 
 ```{r}
-ggplot()+
-  geom_sf(data = smoke_sf,
-          aes(fill = Density))+
+ggplot() +
+  geom_sf(
+    data = smoke_sf,
+    aes(fill = Density)
+  ) +
   scale_fill_manual("Smoke Density",
-                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
-  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5))+
+    values = c("lightgreen", "lightgoldenrod", "tomato")
+  ) +
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)") +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -691,13 +784,17 @@ For the purposes of these exploratory analyses, the satellite travelling directi
 Individual polygons can be union-ed (combined) to one multipolygon with `sf::st_union()`. Adding the `Date = ...` argument within the `dplyr::summarise()` function creates a date parameter in the new `smoke_sf_density` data set according to the year, month, and day of the data (defined in step 2.0 Access, download, and. unzip).
 
 ```{r}
-smoke_sf_density =
+smoke_sf_density <-
   smoke_sf %>%
   group_by(Density) %>%
-  summarise(geometry = st_union(geometry),
-            Date = paste0(year,
-                          month,
-                          day))
+  summarise(
+    geometry = st_union(geometry),
+    Date = paste0(
+      year,
+      month,
+      day
+    )
+  )
 ```
 
 Inspecting the structure of `smoke_sf_density` shows three multipolygons of class `sf` and a column with the date of observation.
@@ -709,14 +806,17 @@ smoke_sf_density
 Plotting `smoke_sf_density` shows that the overlapping borders have been dissolved, and only one polygon is used to represent each smoke density classification.
 
 ```{r}
-ggplot()+
-  geom_sf(data = smoke_sf_density,
-          aes(fill = Density))+
+ggplot() +
+  geom_sf(
+    data = smoke_sf_density,
+    aes(fill = Density)
+  ) +
   scale_fill_manual("Smoke Density",
-                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
-  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5))+
+    values = c("lightgreen", "lightgoldenrod", "tomato")
+  ) +
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)") +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -731,28 +831,36 @@ The steps for accessing, downloading, unzipping, and importing will not be expla
 :::
 
 ```{r, eval=FALSE}
-url_states = "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
+url_states <-
+  "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
 
-destination_states = "/   YOUR FILE PATH   /states.zip"
+destination_states <- "/   YOUR FILE PATH   /states.zip"
 
-download.file(url_states,
-              destination_states)
+download.file(
+  url_states,
+  destination_states
+)
 ```
 
 ```{r, include = FALSE, eval=FALSE}
 ################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
 ################################################################################
-url_states = "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
-destination_states = "/Volumes/SET/Projects/EnviroTools/input/states/states.zip"
-download.file(url_states,
-              destination_states)
+url_states <-
+  "https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_state_500k.zip"
+destination_states <-
+  "/Volumes/SET/Projects/EnviroTools/input/states/states.zip"
+download.file(
+  url_states,
+  destination_states
+)
 ################################################################################
 ```
 
 ```{r, eval=FALSE}
 unzip("/   YOUR FILE PATH   /states.zip",
-      list = TRUE)
+  list = TRUE
+)
 ```
 
 ```{r, echo=FALSE}
@@ -760,7 +868,8 @@ unzip("/   YOUR FILE PATH   /states.zip",
 ## NEED TO CHANGE eval=TRUE for rendering
 ################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/states/states.zip",
-      list = TRUE)
+  list = TRUE
+)
 ################################################################################
 ```
 
@@ -773,7 +882,8 @@ unzip("/   YOUR FILE PATH   /states.zip")
 ## NEED TO CHANGE eval=TRUE for rendering
 ################################################################################
 unzip("/Volumes/SET/Projects/EnviroTools/input/states/states.zip",
-      exdir = "/Volumes/SET/Projects/EnviroTools/input/states")
+  exdir = "/Volumes/SET/Projects/EnviroTools/input/states"
+)
 ################################################################################
 ```
 
@@ -788,12 +898,14 @@ list.files("/Volumes/SET/Projects/EnviroTools/input/states")
 ```
 
 ```{r, eval=FALSE}
-states = st_read("/   YOUR FILE PATH   /cb_2018_us_state.shp")
+states <- st_read("/   YOUR FILE PATH   /cb_2018_us_state.shp")
 ```
 
 ```{r, include=FALSE}
 ################################################################################
-states_sf = st_read("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
+states_sf <- st_read(
+  "/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp"
+)
 ################################################################################
 ```
 
@@ -801,22 +913,27 @@ With the state border data imported, inspect the structure of `states_sf`.
 
 ```{r}
 str(states_sf,
-    vec.len = 2)
+  vec.len = 2
+)
 ```
 
 For the purpose of these exploratory analyses, only the coterminous (CONUS) United States will be used. Subset to only the coterminous United States.
 
 ```{r}
-remove = c("Alaska",
-           "Hawaii",
-           "Puerto Rico",
-           "United States Virgin Islands",
-           "Commonwealth of the Northern Mariana Islands",
-           "Guam",
-           "American Samoa")
+remove <- c(
+  "Alaska",
+  "Hawaii",
+  "Puerto Rico",
+  "United States Virgin Islands",
+  "Commonwealth of the Northern Mariana Islands",
+  "Guam",
+  "American Samoa"
+)
 
-conus_sf = subset(states_sf,
-                  !NAME %in% remove)
+conus_sf <- subset(
+  states_sf,
+  !NAME %in% remove
+)
 ```
 
 Check the coordinate reference system.
@@ -832,18 +949,20 @@ When analyzing or plotting two different data sets together, it is important tha
 Project `conus_sf` to the Albers Equal Area projected coordinate system (EPSG code: 5070).
 
 ```{r}
-conus_sf = st_transform(conus_sf,
-                        5070)
+conus_sf <- st_transform(
+  conus_sf,
+  5070
+)
 ```
 
 Plot CONUS boundaries.
 
 ```{r}
-ggplot()+
-  geom_sf(data = conus_sf)+
-  ggtitle("Contiguous United States Boundaries")+
-  theme_pubr()+
-  theme(plot.title = element_text(hjust = 0.5))+
+ggplot() +
+  geom_sf(data = conus_sf) +
+  ggtitle("Contiguous United States Boundaries") +
+  theme_pubr() +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -862,16 +981,21 @@ Multiple data sets can be plotted in a single map by simply defining multiple `g
 :::
 
 ```{r}
-ggplot()+
-  geom_sf(data = smoke_sf_density,
-          aes(fill = Density))+
+ggplot() +
+  geom_sf(
+    data = smoke_sf_density,
+    aes(fill = Density)
+  ) +
   scale_fill_manual("Smoke Density",
-                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
-  geom_sf(data = conus_sf,
-          fill = "transparent")+
-  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5))+
+    values = c("lightgreen", "lightgoldenrod", "tomato")
+  ) +
+  geom_sf(
+    data = conus_sf,
+    fill = "transparent"
+  ) +
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)") +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -880,23 +1004,30 @@ ggplot()+
 This new plot better shows the distribution of wildfire smoke plumes over the coterminous United States, but contains a lot of data located outside of the study area. The `sf::st_crop()` function can be used to limit the wildfire smoke plume polygons to the bounding box surrounding the CONUS polygons.
 
 ```{r, warning=FALSE}
-smoke_sf_crop = st_crop(smoke_sf_density,
-                        conus_sf)
+smoke_sf_crop <- st_crop(
+  smoke_sf_density,
+  conus_sf
+)
 ```
 
 Plot the cropped polygon data with the CONUS borders.
 
 ```{r}
-ggplot()+
-  geom_sf(data = smoke_sf_crop,
-          aes(fill = Density))+
+ggplot() +
+  geom_sf(
+    data = smoke_sf_crop,
+    aes(fill = Density)
+  ) +
   scale_fill_manual("Smoke Density",
-                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
-  geom_sf(data = conus_sf,
-          fill = "transparent")+
-  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend ="bottom")+
-  theme(plot.title = element_text(hjust = 0.5))+
+    values = c("lightgreen", "lightgoldenrod", "tomato")
+  ) +
+  geom_sf(
+    data = conus_sf,
+    fill = "transparent"
+  ) +
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)") +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -913,14 +1044,18 @@ Accessing, downloading, and unzipping of data is the same as for `sf` and will n
 Import both the wildfire smoke plume coverage data and the United States state border data from your machine. The `terra::vect()` function is used to import vector data (point, line, polygon) as a `SpatVector` object. For detailed description of `SpatVector` objects, see [Description of the methods in the terra pacakge](https://search.r-project.org/CRAN/refmans/terra/html/terra-package.html).
 
 ```{r, eval=FALSE}
-smoke_t = vect("/   YOUR FILE PATH   /hms_smoke20230901.shp")
-states_t = vect("/   YOUR FILE PATH   /cb_2018_us_state_500k.shp")
+smoke_t <- vect("/   YOUR FILE PATH   /hms_smoke20230901.shp")
+states_t <- vect("/   YOUR FILE PATH   /cb_2018_us_state_500k.shp")
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
 ################################################################################
-smoke_t = vect("/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp")
-states_t = vect("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp")
+smoke_t <- vect(
+  "/Volumes/SET/Projects/EnviroTools/input/noaa/hms_smoke20230901.shp"
+)
+states_t <- vect(
+  "/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state_500k.shp"
+)
 ################################################################################
 ```
 
@@ -929,7 +1064,8 @@ states_t = vect("/Volumes/SET/Projects/EnviroTools/input/states/cb_2018_us_state
 A function does not need to be specified in order to inspect the contents of `SpatVector` object.
 
 ```{r}
-smoke_t; states_t
+smoke_t
+states_t
 ```
 
 #### 2.2.3 Reclassify
@@ -943,15 +1079,18 @@ class(smoke_t$Density)
 As with the `sf` package, `$Density` needs to be converted to to a factor because it contains discrete, labelled classes.
 
 ```{r}
-smoke_t$Density = factor(smoke_t$Density,
-                         levels = c("Light", "Medium", "Heavy"))
+smoke_t$Density <- factor(smoke_t$Density,
+  levels = c("Light", "Medium", "Heavy")
+)
 ```
 
 Additionally, the `states_t` data set can be subsetted to only the coterminous United States.
 
 ```{r}
-conus_t = subset(states_t,
-                 !states_t$NAME %in% remove)
+conus_t <- subset(
+  states_t,
+  !states_t$NAME %in% remove
+)
 ```
 
 #### 2.2.4 Coordinate reference system and projection
@@ -960,18 +1099,24 @@ Check the coordinate reference systems of `smoke_t` and `conus_t` data sets.
 
 ```{r}
 crs(smoke_t,
-    describe = TRUE)
+  describe = TRUE
+)
 crs(conus_t,
-    describe = TRUE)
+  describe = TRUE
+)
 ```
 
 Both data sets have previously defined coordinate reference systems, but they are different from each other. When analyzing and plotting multiple spatial data sets it is important that all have the same coordinate reference system. As the study area is still the coterminous United States, project both `smoke_t` and `conus_t` to the Albers Equal Area projected coordinate system (EPSG code: 5070).
 
 ```{r}
-smoke_t = project(smoke_t,
-                  "EPSG:5070")
-conus_t = project(conus_t,
-                  "EPSG:5070")
+smoke_t <- project(
+  smoke_t,
+  "EPSG:5070"
+)
+conus_t <- project(
+  conus_t,
+  "EPSG:5070"
+)
 ```
 
 #### 2.2.5 Plot (multiple)
@@ -983,16 +1128,21 @@ Notice the difference between the following code chunk and `Chunk 71` in 2.1.7 P
 :::
 
 ```{r}
-ggplot()+
-  geom_spatvector(data = smoke_t,
-                  aes(fill = Density))+
+ggplot() +
+  geom_spatvector(
+    data = smoke_t,
+    aes(fill = Density)
+  ) +
   scale_fill_manual("Smoke Density",
-                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
-  geom_spatvector(data = conus_t,
-                  fill = "transparent")+
-  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5))+
+    values = c("lightgreen", "lightgoldenrod", "tomato")
+  ) +
+  geom_spatvector(
+    data = conus_t,
+    fill = "transparent"
+  ) +
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)") +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -1005,9 +1155,10 @@ Certain R packages have functions with the same, or similar, name(s) but have ve
 :::
 
 ```{r}
-smoke_density_t = terra::aggregate(smoke_t,
-                                   by = "Density",
-                                   dissolve = TRUE)
+smoke_density_t <- terra::aggregate(smoke_t,
+  by = "Density",
+  dissolve = TRUE
+)
 ```
 
 The resulting `smoke_density_t` is a SpatVector with 3 geometries, one for each of the density classifications.
@@ -1019,16 +1170,21 @@ smoke_density_t
 Plot the aggregated wildfire smoke plume polygons and the CONUS borders with `ggplot2::ggplot()`.
 
 ```{r}
-ggplot()+
-  geom_spatvector(data = smoke_density_t,
-                  aes(fill = Density))+
+ggplot() +
+  geom_spatvector(
+    data = smoke_density_t,
+    aes(fill = Density)
+  ) +
   scale_fill_manual("Smoke Density",
-                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
-  geom_spatvector(data = conus_t,
-                  fill = "transparent")+
-  ggtitle("Wildfire Smoke Plumes (September 1, 2023)")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5))+
+    values = c("lightgreen", "lightgoldenrod", "tomato")
+  ) +
+  geom_spatvector(
+    data = conus_t,
+    fill = "transparent"
+  ) +
+  ggtitle("Wildfire Smoke Plumes (September 1, 2023)") +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -1037,26 +1193,35 @@ ggplot()+
 Unlike the `sf::st_crop()` function, which can only polygons to the bounding box of another polygon, the `terra::crop()` function is able to crop polygons to the exact border of other polygons. In this case, the wildfire smoke plume polygons will be cropped to the CONUS border.
 
 ```{r}
-smoke_density_crop_t = terra::crop(smoke_density_t,
-                                   conus_t)
+smoke_density_crop_t <- terra::crop(
+  smoke_density_t,
+  conus_t
+)
 ```
 
 Plot the cropped wildfire smoke plume polygons and CONUS border.
 
 ```{r}
-ggplot()+
-  geom_spatvector(data = smoke_density_crop_t,
-                  aes(fill = Density))+
+ggplot() +
+  geom_spatvector(
+    data = smoke_density_crop_t,
+    aes(fill = Density)
+  ) +
   scale_fill_manual("Smoke Density",
-                    values = c("lightgreen", "lightgoldenrod", "tomato"))+
-  geom_spatvector(data = conus_t,
-                  fill = "transparent")+
-  ggtitle("Wildfire Smoke Plumes in the United States (September 1, 2023)")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.line = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text = element_blank())
+    values = c("lightgreen", "lightgoldenrod", "tomato")
+  ) +
+  geom_spatvector(
+    data = conus_t,
+    fill = "transparent"
+  ) +
+  ggtitle("Wildfire Smoke Plumes in the United States (September 1, 2023)") +
+  theme_pubr(legend = "bottom") +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  )
 ```
 
 #### 2.2.7 Zonal statistics
@@ -1070,22 +1235,28 @@ The output of `terra::relate()` is a matrix. The `data.frame(t())` wrappers arou
 :::
 
 ```{r}
-conus_smoke = data.frame(t(relate(smoke_density_t,
-                                  conus_t,
-                                  relation = "overlaps")))
+conus_smoke <- data.frame(
+  t(
+    relate(smoke_density_t,
+           conus_t,
+           relation = "overlaps")
+  )
+)
 ```
 
 Set the column names of the data frame to match the smoke density classifications. The order of the columns in `conus_smoke` are based on the ordered factor levels in `smoke_density_t$Density` (Refer to 2.2.3 Reclassify).
 
 ```{r}
-colnames(conus_smoke) = c("Light", "Medium", "Heavy")
+colnames(conus_smoke) <- c("Light", "Medium", "Heavy")
 ```
 
 Combine the wildfire smoke plume indicator data frame with the the CONUS border data.
 
 ```{r}
-conus_t = cbind(conus_t,
-                conus_smoke)
+conus_t <- cbind(
+  conus_t,
+  conus_smoke
+)
 ```
 
 `conus_t` now contains separate columns indicating the presence or absence of "Light", "Medium", and "Heavy" wildfire smoke plumes for each state.
@@ -1109,7 +1280,7 @@ class(unique(smoke_density_t$Density))
 :::
 
 ```{r}
-dens_c = c("Light", "Medium", "Heavy")
+dens_c <- c("Light", "Medium", "Heavy")
 ```
 
 Now that the list of smoke plume density classifications has been defined and is class `character`, create the `for` loop.
@@ -1121,32 +1292,38 @@ The first block within the loop defines the plotting colors, stored in `color_va
 The second block within the loop creates and prints the plots. The structure of the `ggplot2::ggplot()` function is extremely similar to the previous examples but uses the `for` loop indexing. The second argument in `geom_spatvector()` sets the `aes_string(fill = dens_c[d])`. This is telling the loop to color the states according to the TRUE/FALSE value in each of the smoke plume indicator columns. The `scale_fill_manual(values = color_values)` argument determines what colors to use based on the prevoiusly defined `color_values` variable.
 
 ```{r, warning=FALSE}
-for(d in 1:length(dens_c)){
-  
+for (d in seq_along(dens_c)) {
   # define color palette based on smoke density
-  if(dens_c[d] == "Light"){
-    color_values = c("lightgrey", "lightgreen")
-  } else if(dens_c[d] == "Medium"){
-    color_values = c("lightgrey", "lightgoldenrod")
-  } else if(dens_c[d] == "Heavy"){
-    color_values = c("lightgrey", "tomato")
+  if (dens_c[d] == "Light") {
+    color_values <- c("lightgrey", "lightgreen")
+  } else if (dens_c[d] == "Medium") {
+    color_values <- c("lightgrey", "lightgoldenrod")
+  } else if (dens_c[d] == "Heavy") {
+    color_values <- c("lightgrey", "tomato")
   }
-  
+
   # create plot
   print(
-    ggplot()+
-      geom_spatvector(data = conus_t,
-                      aes_string(fill = dens_c[d]))+
-      scale_fill_manual(paste0(dens_c[d],
-                               " Smoke Plume Coverage Present"),
-                        values = color_values)+
-      theme_pubr(legend="bottom")+
-      theme(plot.title = element_text(hjust = 0.5),
-            axis.line = element_blank(),
-            axis.ticks = element_blank(),
-            axis.text = element_blank())
+    ggplot() +
+      geom_spatvector(
+        data = conus_t,
+        aes_string(fill = dens_c[d])
+      ) +
+      scale_fill_manual(
+        paste0(
+          dens_c[d],
+          " Smoke Plume Coverage Present"
+        ),
+        values = color_values
+      ) +
+      theme_pubr(legend = "bottom") +
+      theme(
+        plot.title = element_text(hjust = 0.5),
+        axis.line = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank()
+      )
   )
-  
 }
 ```
 
@@ -1161,39 +1338,51 @@ The website URL where the NOAA NARR air temperautre data exists is year-specific
 Define year of interest.
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide'}
-year = "2021"
+year <- "2021"
 ```
 
 The `utils::download.file()` function downloads the file according to the defined URL and destination file.
 
 ```{r, results=FALSE, warning=FALSE, message=FALSE, results='hide', eval=FALSE}
 # specify the URL where data is stored based on year variable of interest
-url_narr = paste0("https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
-                  year,
-                  ".nc")
+url_narr <- paste0(
+  "https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
+  year,
+  ".nc"
+)
 
 # specify where to save downloaded data
-destination_narr = paste0("/   YOUR FILE PATH   /narr_air2m_",
-                          year,
-                          ".nc")
+destination_narr <- paste0(
+  "/   YOUR FILE PATH   /narr_air2m_",
+  year,
+  ".nc"
+)
 
 # download the data
-download.file(url_narr,
-              destination_narr)
+download.file(
+  url_narr,
+  destination_narr
+)
 ```
 
 ```{r, include = FALSE, eval=FALSE}
 ################################################################################
 ## NEED TO CHANGE eval=TRUE for rendering
 ################################################################################
-url_narr = paste0("https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
-                  year,
-                  ".nc")
-destination_narr = paste0("/Volumes/SET/Projects/EnviroTools/input/narr/narr_air2m_",
-                          year,
-                          ".nc")
-download.file(url_narr,
-              destination_narr)
+url_narr <- paste0(
+  "https://downloads.psl.noaa.gov//Datasets/NARR/Dailies/monolevel/air.2m.",
+  year,
+  ".nc"
+)
+destination_narr <- paste0(
+  "/Volumes/SET/Projects/EnviroTools/input/narr/narr_air2m_",
+  year,
+  ".nc"
+)
+download.file(
+  url_narr,
+  destination_narr
+)
 ################################################################################
 ```
 
@@ -1216,15 +1405,19 @@ The file downloaded from the NOAA website is a `.nc` file. NetCDF files are comm
 Import both the air temperature data from your machine. The `terra::rast()` function is used to import raster data as a `SpatRaster` object. For detailed description of `SpatRaster` objects, see [Description of the methods in the terra pacakge](https://search.r-project.org/CRAN/refmans/terra/html/terra-package.html).
 
 ```{r, eval=FALSE}
-narr = rast(paste0("/   YOUR FILE PATH   /narr_air2m_",
-                   year,
-                   ".nc")
+narr <- rast(paste0(
+  "/   YOUR FILE PATH   /narr_air2m_",
+  year,
+  ".nc"
+))
 ```
 
 ```{r, echo=FALSE, warning=TRUE, cache=FALSE, results='hide'}
-narr = rast(paste0("/Volumes/SET/Projects/EnviroTools/input/narr/narr_air2m_",
-                    year,
-                    ".nc"))
+narr <- rast(paste0(
+  "/Volumes/SET/Projects/EnviroTools/input/narr/narr_air2m_",
+  year,
+  ".nc"
+))
 ```
 
 ### 3.2 Inspect structure
@@ -1240,7 +1433,9 @@ Inspecting the structure of `narr` shows important information, including its cl
 When working with raster data, the dimensions of the raster refer to the number of rows (`nrow`) and columns (`ncol`) of grid cells that make up the raster. Similarly, the number of layers in the raster object (`nlyr`) represents the number of observations of the data. These can also be inspected individually with `nrow`, `ncol`, and `nlyr`, respectively.
 
 ```{r}
-nrow(narr); ncol(narr); nlyr(narr)
+nrow(narr)
+ncol(narr)
+nlyr(narr)
 ```
 
 ### 3.2 Rename
@@ -1259,10 +1454,14 @@ When using climate or environmental data spanning multiple years, changing "day 
 :::
 
 ```{r}
-names(narr) = paste0("air_",
-                     gsub("-",
-                          "",
-                          as.character(time(narr))))
+names(narr) <- paste0(
+  "air_",
+  gsub(
+    "-",
+    "",
+    as.character(time(narr))
+  )
+)
 ```
 
 Inspecting the names and times again shows the new layer naming format.
@@ -1278,14 +1477,17 @@ The structure of `narr` showed that the data did have a coordinate reference sys
 
 ```{r}
 crs(narr,
-    describe = TRUE)
+  describe = TRUE
+)
 ```
 
 Although the coordinate reference system is unnamed it cannot be overwritten with (`crs() = "EPSG:`). The data can, however, be projected to a different projected coordinate system with `terra::project()`. As these exploratory analyses will, again, focus on the coterminous United States, the projected reference system of `conus_t` (Albers Equal Area) can be applied to `narr`.
 
 ```{r}
-narr = project(narr,
-               crs(conus_t))
+narr <- project(
+  narr,
+  crs(conus_t)
+)
 ```
 
 Ensure that both data sets have the same coordinate reference system.
@@ -1299,17 +1501,21 @@ crs(conus_t) == crs(narr)
 With the `narr` data prepared and projected, it can be plotted with `ggplot2::ggplot()` by specifying the `geom_spatraster()` argument. This first example will plot only the data from January 1, 2021 (`narr$air_20210101`.)
 
 ```{r}
-ggplot()+
-  geom_spatraster(data = narr$air_20210101)+
-  scale_fill_continuous(type = "viridis",
-                        na.value = NA,
-                        "Temperature (°K)")+
-  ggtitle("Air Temperature at 2m Height (January 1, 2021)")+
-  geom_spatvector(data = conus_t,
-                  fill = "transparent",
-                  color = "black")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5))+
+ggplot() +
+  geom_spatraster(data = narr$air_20210101) +
+  scale_fill_continuous(
+    type = "viridis",
+    na.value = NA,
+    "Temperature (°K)"
+  ) +
+  ggtitle("Air Temperature at 2m Height (January 1, 2021)") +
+  geom_spatvector(
+    data = conus_t,
+    fill = "transparent",
+    color = "black"
+  ) +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5)) +
   grids()
 ```
 
@@ -1320,28 +1526,35 @@ ggplot()+
 The `narr` data can be limited to only the study area of interest with `terra::crop()`. The `mask = TRUE` argument crops `x` to the polygon border of `y` (`mask = FALSE` crops to the bounding box).
 
 ```{r}
-narr_crop = crop(narr,
-                 conus_t,
-                 mask = TRUE)
+narr_crop <- crop(narr,
+  conus_t,
+  mask = TRUE
+)
 ```
 
 Plot the cropped data for January 1, 2021 (`narr_crop$air_20210101`).
 
 ```{r}
-ggplot()+
-  geom_spatraster(data = narr_crop$air_20210101)+
-  scale_fill_continuous(type = "viridis",
-                        na.value = NA,
-                        "Temperature (°K)")+
-  ggtitle("Air Temperature at 2m Height (January 1, 2021)")+
-  geom_spatvector(data = conus_t,
-                  fill = "transparent",
-                  color = "black")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.line = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text = element_blank())
+ggplot() +
+  geom_spatraster(data = narr_crop$air_20210101) +
+  scale_fill_continuous(
+    type = "viridis",
+    na.value = NA,
+    "Temperature (°K)"
+  ) +
+  ggtitle("Air Temperature at 2m Height (January 1, 2021)") +
+  geom_spatvector(
+    data = conus_t,
+    fill = "transparent",
+    color = "black"
+  ) +
+  theme_pubr(legend = "bottom") +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  )
 ```
 
 ### 3.7 Units
@@ -1351,7 +1564,7 @@ The previous plots show the spatial variation in air temperature on January 1, 2
 For example, convert the temperature units in `narr_crop_c` from Kelvin to Celsius.
 
 ```{r}
-narr_crop_c = narr_crop - 273.15
+narr_crop_c <- narr_crop - 273.15
 ```
 
 The results of the following exploratory analyses will be more meaningful now that the temperature measurement is easy to interpret.
@@ -1365,34 +1578,41 @@ When applying functions to SpatRaster objects, using the `$` index and column na
 :::
 
 ```{r}
-narr_crop_c$mean = mean(narr_crop_c)
-narr_crop_c$range = max(narr_crop_c) - min(narr_crop_c)
+narr_crop_c$mean <- mean(narr_crop_c)
+narr_crop_c$range <- max(narr_crop_c) - min(narr_crop_c)
 ```
 
 Inspect the results of the mean and range calculations.
 
 ```{r}
-summary(narr_crop_c$mean); summary(narr_crop_c$range)
+summary(narr_crop_c$mean)
+summary(narr_crop_c$range)
 ```
 
 Visualize the mean and range air temperature values for 2021 with `ggplot2::ggplot()`. Utilizing the `+facet_wrap(~ lyr)` argument will plot the mean and range values side by side in a single plot.
 
 ```{r, warning=FALSE}
-ggplot()+
-  geom_spatraster(data = narr_crop_c[[c("mean", "range")]])+
-  scale_fill_continuous(type = "viridis",
-                        na.value = NA,
-                        "Temperature (°C)")+
-  facet_wrap(~ lyr)+
-  ggtitle("Air Temperature in 2021")+
-  geom_spatvector(data = conus_t,
-                  fill = "transparent",
-                  color = "black")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.line = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text = element_blank())
+ggplot() +
+  geom_spatraster(data = narr_crop_c[[c("mean", "range")]]) +
+  scale_fill_continuous(
+    type = "viridis",
+    na.value = NA,
+    "Temperature (°C)"
+  ) +
+  facet_wrap(~lyr) +
+  ggtitle("Air Temperature in 2021") +
+  geom_spatvector(
+    data = conus_t,
+    fill = "transparent",
+    color = "black"
+  ) +
+  theme_pubr(legend = "bottom") +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  )
 ```
 
 ### 3.9 Zonal statistics
@@ -1400,26 +1620,33 @@ ggplot()+
 Taking a closer look at the mean air temperature data, it is clear that annual mean temperature differ between and within states. If the goal was to compare states to each other, a single statistic for each state would be useful. Zonal statistics can be computed using the `terra` package to calculate the average annual mean temperature in each state for the year 2021.
 
 ```{r, warning=FALSE}
-conus_t$MEAN = zonal(narr_crop_c$mean,
-                     conus_t,
-                     fun = "mean")
+conus_t$MEAN <- zonal(narr_crop_c$mean,
+  conus_t,
+  fun = "mean"
+)
 ```
 
 Once calculated, state-specific mean annual temperatures can be plotted using only the `conus_t` SpatVector.
 
 ```{r}
-ggplot()+
-  geom_spatvector(data = conus_t,
-                  aes(fill = MEAN))+
-  scale_fill_continuous(type = "viridis",
-                        na.value = NA,
-                        "Temperature (°C)")+
-  ggtitle("Average Annual Temperature by State in 2021")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.line = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text = element_blank())
+ggplot() +
+  geom_spatvector(
+    data = conus_t,
+    aes(fill = MEAN)
+  ) +
+  scale_fill_continuous(
+    type = "viridis",
+    na.value = NA,
+    "Temperature (°C)"
+  ) +
+  ggtitle("Average Annual Temperature by State in 2021") +
+  theme_pubr(legend = "bottom") +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  )
 ```
 
 ### 3.10 Reclassify
@@ -1431,58 +1658,77 @@ The first step in the reclassification process is to create a matrix storing the
 Create the reclassification matrix.
 
 ```{r}
-from = c(-Inf,
-         10,
-         20)
-to = c(10,
-       20,
-       Inf)
-becomes = 1:3
-reclass = matrix(c(from,
-                    to,
-                    becomes),
-                 ncol = 3)
+from <- c(
+  -Inf,
+  10,
+  20
+)
+to <- c(
+  10,
+  20,
+  Inf
+)
+becomes <- 1:3
+reclass <- matrix(
+  c(
+    from,
+    to,
+    becomes
+  ),
+  ncol = 3
+)
 ```
 
 Reclassify annual mean temperatures according to the reclassification matrix. The `right = TRUE` argument indicates that intervals are open on the left and closed on the right (ie. (0,10\] becomes 1).
 
 ```{r}
-narr_reclass = classify(narr_crop_c$mean,
-                        rcl = reclass,
-                        right = TRUE)
+narr_reclass <- classify(narr_crop_c$mean,
+  rcl = reclass,
+  right = TRUE
+)
 ```
 
 Although `narr_reclass` contains the reclassified mean air temperature data, the data is still continuously numeric. The following chunk of code converts the `narr_reclass$mean` layer from numeric to character based on the defined levels.
 
 ```{r}
-level_values = data.frame(c(1:3),
-                          c("1", "2", "3"))
-colnames(level_values) = c("mean_continuous", "mean_discrete")
+level_values <- data.frame(
+  c(1:3),
+  c("1", "2", "3")
+)
+colnames(level_values) <- c("mean_continuous", "mean_discrete")
 set.cats(narr_reclass,
-         layer = "mean",
-         value = level_values)
+  layer = "mean",
+  value = level_values
+)
 ```
 
 Plot the discretely reclassified mean temperature data.
 
 ```{r}
-ggplot()+
-  geom_spatraster(data = narr_reclass$mean_discrete)+
+ggplot() +
+  geom_spatraster(data = narr_reclass$mean_discrete) +
   scale_fill_viridis_d("",
-                       labels = c("≤10°",
-                                  "10°< & ≤20°",
-                                  "20°<",
-                                  ""),
-                       na.value = NA)+
-  ggtitle("Reclassified Air Temperature Means")+
-  geom_spatvector(data = conus_t,
-                  fill = "transparent",
-                  color = "black")+
-  theme_pubr(legend = "bottom")+
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.line = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text = element_blank())
+    labels = c(
+      "≤10°",
+      "10°< & ≤20°",
+      "20°<",
+      ""
+    ),
+    na.value = NA
+  ) +
+  ggtitle("Reclassified Air Temperature Means") +
+  geom_spatvector(
+    data = conus_t,
+    fill = "transparent",
+    color = "black"
+  ) +
+  theme_pubr(legend = "bottom") +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  )
 ```
 
 ## 4. References
