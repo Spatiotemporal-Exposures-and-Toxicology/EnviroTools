@@ -1,0 +1,10 @@
+Package: EnviroTools_Vignettes
+Title: CHORDS group spatial analysis vignettes
+Version: 1.0.0
+Description: Vignettes designed to inform users about spatial analyses with environmental data in R.
+Depends: R (>= 3.5.0)
+Imports: dplyr, ggplot2, ggpubr, sf, terra, tidyterra, utils
+Encoding: UTF-8
+VignetteBuilder: knitr, rmarkdown, quarto
+RoxygenNote: 7.2.3
+Config/testthat/edition: 3
