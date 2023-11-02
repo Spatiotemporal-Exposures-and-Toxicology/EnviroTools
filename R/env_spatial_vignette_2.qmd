@@ -1,0 +1,730 @@
+---
+title: Spatial Analysis with Environmental Data in R
+subtitle: Combining Multiple Spatial Data Sets
+authors: Mitchell Manware, Kyle P Messier
+format:
+  html:
+    toc: true
+    toc-title: Table of Contents
+    toc-depth: 4
+    toc-expand: TRUE
+editor: source
+---
+
+## 0. Introduction
+
+### 0.1 Motivation
+
+The previous vignette, *Access, Import, and Primary Analyses*, covered the important first steps for performing spatial analyses with environmental data in R. Each of the data type examples in this vignette, however, dealt with only one data set at a given time. Measuring covariates or exposures over a period of time is important in environmental health research, and having tools for efficient processing of spatial data is important.
+
+::: callout-note
+This vignette will focus on combining/merging spatial data sets with a time component using the `terra` package.
+:::
+
+### 0.2 Data Types
+
+This vignette will cover how to efficiently import **polygon** and **raster** data for given periods of time.
+
+For an introduction on spatial analyses with these types of data, please see *Spatial Analysis with Environmental Data in R: Access, Import, and Primary Analyses*.
+
+### 0.3 Data Sources
+
+The exploratory analyses performed in this vignette utilize free and publicly available environmental data. The code is designed to access each specific file used for the exploratory analyses, but a description of each data source and data set is available below.
+
+**DATA SOURCES**
+
+### 0.4 Packages
+
+Many different R packages can be used to create, import, analyze, and export spatial data. If you have not used these packages previously, they may not be installed on your machine. The following chunk of code installs and imports the required packages, so run the code before proceeding with the exploratory analyses.
+
+::: callout-note
+Installing and importing new packages may required R to restart.
+:::
+
+```{r, warning = FALSE, message = FALSE, results = FALSE}
+vignette_packages <- c(
+  "doby", "dplyr", "ggplot2", "ggpubr", "sf",
+  "stringr", "terra", "tidyterra", "utils"
+)
+
+for (v in seq_along(vignette_packages)) {
+  if (vignette_packages[v] %in% installed.packages() == FALSE) {
+    install.packages(vignette_packages[v])
+  }
+}
+
+library(doBy)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(sf)
+library(stringr)
+library(terra)
+library(tidyterra)
+library(utils)
+```
+
+```{r,  echo = FALSE, eval = TRUE, results = FALSE, message = FALSE}
+#### TEST CHUNK ####
+library(testthat)
+test_that("Required packages are loaded.", {
+  loaded_packages <- (.packages())
+  expect_in(vignette_packages, loaded_packages)
+})
+####################
+```
+
+```{r, echo = FALSE}
+wd <- "/Volumes/SET/Projects/EnviroTools/input/"
+```
+
+::: callout-important
+The exploratory analyses performed in this vignette are designed for educational purposes only. The results of the following analyses are not peer-reviewed findings, nor are they based on any hypotheses.
+
+Additionally, the view and opinions expressed in this vignette reflect the views and opinions of the authors alone, and not those of the National Institutes of Health (NIH) or the National Institute of Environmental Health Sciences (NIEHS).
+:::
+
+## 1. Polygon Data
+
+Like the previous chapter, the exploratory analyses in this vignette will utilize wildfire smoke plume coverage data from the United States National Oceanic and Atmospheric Administration (NOAA).
+
+The previous chapter discusses, in depth, the steps taken to download data from a URL from within an R script. It only, however, downloads a single zip file containing wildfire smoke data from a single day. For this example, we will *complete* similar steps but for a series of time.
+
+### 1.0 URL and file name variables
+
+For this vignette, we are interested in the three day period from September 1, 2023 through September 3, 2023. First, we must define the `days`, `month`, and `year` variables for building the download URLs.
+
+The variable `days` is plural because we will include the first three days of September 2023. If the time period of interest covered multiple months or years, these variables can also be pluralized/vectorized for multiple values.
+
+::: callout-note
+The variables required to download data from a URL are based on a URLs' unique structure.
+:::
+
+For the NOAA wildfire smoke plume URLs the day of the month and month number is zero padded, meaning that numbers 1 through 9 are preceded by zeros (ie. "01", "02"...) to have a uniform character width as the numbers 10 through 99.
+
+```{r}
+days <- seq(1, 3, by = 1)
+days <- stringr::str_pad(days,
+  width = 2,
+  side = "left",
+  pad = "0"
+)
+```
+
+The `month` and `year` variables hold only one value each, but will be defined with the `seq()` and `stringr::str_pad()` for consistency.
+
+::: callout-note
+Defining the variables with the `seq()` and `stringr::str_pad()` **sequence** is also very useful for re-using scripts. To re-run the script with different dates of interest, only the values within `seq()` need to be changed
+:::
+
+```{r}
+month <- seq(9, 9, by = 1)
+month <- stringr::str_pad(month,
+  width = 2,
+  side = "left",
+  pad = "0"
+)
+year <- seq(2023, 2023, by = 1)
+year <- stringr::str_pad(year,
+  width = 4,
+  side = "left",
+  pad = "0"
+)
+```
+
+Before proceeding, ensure that the three variables contain character class **observations**.
+
+```{r}
+class(days)
+class(month)
+class(year)
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("`days`, `month`, and `year` are of class 'character.'", {
+  expect_equal(class(c(days, month, year)), "character")
+})
+####################
+```
+
+Identifying a download URL structure can be tricky. One option is hovering the cursor over the "Download" button/link on the given website and identifying the link in the lower left corner.
+
+![Text](/Volumes/SET/Projects/EnviroTools/input/figures/NOAA_url_hover.png){fig-align="center"}
+
+Alternatively, right clicking the "Download" button/link, selecting "Copy Link Address", and pasting it somewhere to be referenced.
+
+![Text1](/Volumes/SET/Projects/EnviroTools/input/figures/NOAA_URL_right_click.png){fig-align="center"}
+
+Based on these **links** we are able to understand the structure of the download URLs.
+
+```{r}
+base <- "https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons"
+```
+
+### 1.1 Access, download, and unzip
+
+To build the download URLs, the download destinations (file names), and run the `utils::download.file()` function, we will utilize `for` loops. Although `for` loops look technically complex, they simply repeat *steps/lines of code* for a defined number of inputs. For a more detailed explanation and examples of `for` loops, please see [R For Loop](https://www.w3schools.com/r/r_for_loop.asp).
+
+```{r, eval = FALSE}
+for (d in seq_along(days)) {
+  url_noaa <- paste0(
+    base,
+    "/Shapefile/",
+    year,
+    "/",
+    month,
+    "/hms_smoke",
+    year,
+    month,
+    days[d],
+    ".zip"
+  )
+  destination_noaa <- paste0(
+    "/   YOUR FILE PATH   /noaa_smoke",
+    year,
+    month,
+    days[d],
+    ".zip"
+  )
+  download.file(
+    url_noaa,
+    destination_noaa
+  )
+  unzip(destination_noaa,
+    exdir = "/   YOUR FILE PATH   /"
+  )
+}
+```
+
+```{r, include = FALSE, eval = FALSE}
+for (d in seq_along(days)) {
+  url_noaa <- paste0(
+    base,
+    "/Shapefile/",
+    year,
+    "/",
+    month,
+    "/hms_smoke",
+    year,
+    month,
+    days[d],
+    ".zip"
+  )
+  destination_noaa <- paste0(
+    wd,
+    "noaa/",
+    "noaa_smoke",
+    year,
+    month,
+    days[d],
+    ".zip"
+  )
+  download.file(
+    url_noaa,
+    destination_noaa
+  )
+  unzip(destination_noaa,
+    exdir = wd
+  )
+}
+```
+
+Check the contents of the exit directory (`"/   YOUR FILE PATH   /"`) to ensure that the requested data has been properly accessed, downloaded and unzipped.
+
+```{r, eval = FALSE}
+list.files("/   YOUR FILE PATH   /")
+```
+
+```{r, echo = FALSE}
+list.files(paste0(wd, "/noaa"))
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("NOAA HMS smoke shapefile and support files exist in 'wd'.", {
+  expected_files <- c(
+    "hms_smoke20230901.dbf", "hms_smoke20230901.prj",
+    "hms_smoke20230901.shx", "hms_smoke20230901.shp",
+    "hms_smoke20230902.dbf", "hms_smoke20230902.prj",
+    "hms_smoke20230902.shx", "hms_smoke20230902.shp",
+    "hms_smoke20230903.dbf", "hms_smoke20230903.prj",
+    "hms_smoke20230903.shx", "hms_smoke20230903.shp"
+  )
+  listed_files <- list.files(paste0(wd, "noaa"))
+  expect_in(expected_files, listed_files)
+})
+####################
+```
+
+### 1.2 Import and analyze
+
+Now that the requested files have been downloaded and unzipped, the data will be imported using a `for` loop. For import all of the downloaded date, a `vector` containing the sequence of dates of interest must first be created.
+
+```{r}
+dates <- NULL
+for (y in seq_along(year)) {
+  year <- year[y]
+  for (m in seq_along(month)) {
+    month <- month[m]
+    for (d in seq_along(days)) {
+      date <- paste0(
+        year,
+        month,
+        days[d]
+      )
+      dates <- c(dates, date)
+    }
+  }
+}
+```
+
+Three nested for loops may seem like a lot of effort and code to create a three-object character `vector`, but when expanded to a list of dates for multiple weeks, months, or years, having this syntax will be very helpful.
+
+Now, when we check the object `dates`, it will be a charcter `vector` of our three dates of interest which match the format of the name of the file we downloaded.
+
+```{r}
+dates
+class(dates)
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("`dates` has a length of 3.", {
+  expect_equal(length(dates), 3)
+})
+####################
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("`dates` is class 'character'.", {
+  expect_equal(class(dates), "character")
+})
+####################
+```
+
+With the sequence of dates defined, we will import the data using `terra::vect()`. In addition to importing, the `for` loop will create a `$Date` column based on the `dates` vector, create a `$Date_text` column for plot labelling based on `dates`, merge polygons of with the same `$Density` class, and combine the date-specific datasets to one SpatVector object. The resulting `smoke` SpatVector will contain smoke plume data from all three days in the date sequence.
+
+:::callout-note
+See *Access, Import, and Primary* analyses for a detailed explanation of this process and why it is useful
+:::
+
+```{r, eval = FALSE}
+smoke <- terra::vect()
+for (d in seq_along(dates)) {
+  path <- paste0(
+    "/   YOUR FILE PATH   /hms_smoke",
+    dates[d],
+    ".shp"
+  )
+  data <- terra::vect(path)
+  data$Density <- factor(data$Density,
+    levels = c("Light", "Medium", "Heavy")
+  )
+  data <- terra::aggregate(data,
+    by = "Density",
+    dissolve = TRUE
+  )
+  data$Date <- paste0(dates[d])
+  data$Date_text <- format(as.Date(dates[d], format = "%Y%m%d"),
+    format = "%B %d, %Y"
+  )
+  smoke <- terra::vect(c(smoke, data))
+}
+```
+
+```{r, echo = FALSE}
+smoke <- terra::vect()
+for (d in seq_along(dates)) {
+  path <- paste0(
+    wd,
+    "noaa/hms_smoke",
+    dates[d],
+    ".shp"
+  )
+  data <- terra::vect(path)
+  data$Density <- factor(data$Density,
+    levels = c("Light", "Medium", "Heavy")
+  )
+  data <- terra::aggregate(data,
+    by = "Density",
+    dissolve = TRUE
+  )
+  data$Date <- paste0(dates[d])
+  data$Date_text <- format(as.Date(dates[d], format = "%Y%m%d"),
+    format = "%B %d, %Y"
+  )
+  smoke <- terra::vect(c(smoke, data))
+}
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("`smoke` has 9 rows.", {
+  expect_equal(nrow(smoke), 9)
+})
+####################
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("`smoke$Date` has 3 different values.", {
+  expect_equal(length(unique(smoke$Date)), 3)
+})
+####################
+```
+
+The resulting `smoke` data set is a single SpatVector object which contains wildfire smoke plume data for 3 days.
+
+### 1.3 Plot
+
+Having spatial data across a temporal range in a single dataset is useful for various analyses. For a visual example, plotting wildfire smoke plume coverage across different days to inspect the general spatial trends.
+
+Before plotting, project the `smoke` data.
+
+```{r}
+smoke <- terra::project(
+  smoke,
+  "EPSG:5070"
+)
+```
+
+As with the previous chapter, we will plot the wildfire smoke plumes with the Coterminous United States' polygons for spatial context (see *Access, Import, and Primary Analyses* for instructions on downloading the CONUS state boundary data.
+
+```{r, eval = FALSE}
+conus <- terra::vect("/   YOUR FILE PATH   /cb_2018_us_state_500k.shp")
+remove <- c(
+  "Alaska",
+  "Hawaii",
+  "Puerto Rico",
+  "United States Virgin Islands",
+  "Commonwealth of the Northern Mariana Islands",
+  "Guam",
+  "American Samoa"
+)
+conus <- subset(conus,
+  subset = !conus$NAME %in% remove
+)
+conus <- terra::project(
+  conus,
+  "EPSG:5070"
+)
+```
+
+```{r, echo = FALSE}
+conus <- terra::vect(paste0(wd, "states/cb_2018_us_state_500k.shp"))
+remove <- c(
+  "Alaska",
+  "Hawaii",
+  "Puerto Rico",
+  "United States Virgin Islands",
+  "Commonwealth of the Northern Mariana Islands",
+  "Guam",
+  "American Samoa"
+)
+conus <- subset(conus,
+  subset = !conus$NAME %in% remove
+)
+conus <- terra::project(
+  conus,
+  "EPSG:5070"
+)
+```
+
+Create the plot.
+
+```{r}
+ggplot() +
+  geom_spatvector(
+    data = smoke,
+    aes(fill = Density)
+  ) +
+  scale_fill_manual("Smoke Density",
+    values = c("lightgreen", "lightgoldenrod", "tomato")
+  ) +
+  geom_spatvector(
+    data = conus,
+    fill = "transparent"
+  ) +
+  facet_wrap(~Date_text,
+    nrow = 1
+  ) +
+  theme_pubr(legend = "bottom") +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  ) +
+  grids()
+```
+
+## 2. Raster Data
+
+Combining multiple spatial datasets to create a single, large dataset across a specific period of time is also applicable for `raster` type data.
+
+The exploratory analyses in this portion of the vignette will utilize air temperature (2m height) data from the United States National Oceanic and Atmospheric Administration's (NOAA) NCEP North American Regional Reanalysis data set.
+
+Similar to section *1. Polygon Data*, we are interested in downloading data for a duration of time using multiple data sets. When using `raster` type data, some data sets may inherently have multiple layers, each indicating a time. This "stack" of `raster` data is very common. In the previous chapter, for example, the data file that was downloaded contained air temperature data for the entire year of 2021 in a single `.nc` data file.
+
+To demonstrate the applicability of downloading data with `for` loops, we will now downloaded data from January 1, 2020 through December 31, 2022.
+
+### 2.0 URL and file name variables
+
+First we must define the `years` variable based on our years of interest.
+
+```{r}
+years <- seq(2020, 2022, by = 1)
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("Length of `years` is 3.", {
+  expect_equal(length(years), 3)
+})
+####################
+```
+
+:::callout-note
+Unlike in *1.0 Access, download, and unzip*, the only URL variable that needs to be defined is `year` based on the unique download URLs' of NOAA NCEP data.
+:::
+
+We must also define the base of the URL.
+
+```{r}
+base <-
+  "https://downloads.psl.noaa.gov/Datasets/NARR/Dailies/monolevel/air.2m."
+```
+
+### 2.1 Access and download
+
+The `for` loop syntax will be used to download the NARR NCEP data of interest.
+
+```{r, eval = FALSE}
+for (y in seq_along(years)) {
+  url_narr <- paste0(
+    base,
+    years[y],
+    ".nc"
+  )
+  destination_narr <- paste0(
+    "/   YOUR FILE PATH   /narr_air2m_",
+    year[y],
+    ".nc"
+  )
+  download.file(
+    url_narr,
+    destination_narr
+  )
+}
+```
+
+```{r, include = FALSE, eval = FALSE}
+options(timeout = 500)
+for (y in seq_along(years)) {
+  url_narr <- paste0(
+    base,
+    years[y],
+    ".nc"
+  )
+  destination_narr <- paste0(
+    wd,
+    "narr/narr_air2m_",
+    years[y],
+    ".nc"
+  )
+  download.file(url_narr,
+    destination_narr,
+    method = "curl"
+  )
+}
+```
+
+Check the contents of the exit directory (`"/   YOUR FILE PATH   /"`) to ensure that the requested data has been properly accessed and downloaded.
+
+```{r, eval = FALSE}
+list.files("/   YOUR FILE PATH   /")
+```
+
+```{r, echo = FALSE}
+list.files(paste0(wd, "/narr"))
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("NOAA narr data has been downloaded.", {
+  expect_equal(length(list.files(paste0(wd, "/narr"))), 3)
+})
+####################
+```
+
+### 2.2 Import
+
+Now that the requested files have been downloaded and unzipped, the data will be imported using a `for` loop. To import the downloaded NOAA NARR data, the `year` variable can be reused because the only identifier used in the file name is the year of the data.
+
+:::callout-note
+See *Access, Import, and Primary* analyses for a detailed explanation of this dataset and why this analysis is useful
+:::
+
+For this step, we will import the data and convert the units from Kelvin to degrees Celsius.
+
+```{r, eval = FALSE}
+narr <- terra::rast()
+for (y in seq_along(years)) {
+  data <- terra::rast(paste0(
+    "/   YOUR FILE PATH   /narr_air2m",
+    years[y],
+    ".nc"
+  ))
+  names(data) <- paste0(
+    "air_",
+    gsub("-", "", as.character(time(data)))
+  )
+  data <- data - 273.15
+  narr <- c(narr, data, warn = FALSE)
+}
+```
+
+```{r, echo = FALSE}
+narr <- terra::rast()
+for (y in seq_along(years)) {
+  data <- terra::rast(paste0(
+    wd,
+    "/narr/narr_air2m_", years[y], ".nc"
+  ))
+  names(data) <- paste0(
+    "air_",
+    gsub("-", "", as.character(time(data)))
+  )
+  data <- data - 273.15
+  narr <- c(narr, data, warn = FALSE)
+}
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("`narr` SpatRaster has 1096 layers.", {
+  expect_equal(terra::nlyr(narr), 1096)
+})
+####################
+```
+
+The resulting `narr` dataset contains 2m air temperature data (°C) for all three years.
+
+With all three years of temperature data in a single data set, we can compute summary statistics and compare trends in temperature across the three years. For this, we will use three states from the previously imported and cleaned `conus` data.
+
+Subset the `conus` data to include only the states Minnesota, Missouri, and Louisiana. Additionally, project the state boundary data to match the coordinate reference system of the `narr` data
+
+```{r}
+state_names <- c("Minnesota", "Missouri", "Louisiana")
+states <- subset(conus,
+  subset = conus$NAME %in% state_names
+)
+states <- terra::project(
+  states,
+  terra::crs(narr)
+)
+```
+
+```{r}
+ggplot() +
+  geom_spatvector(data = conus) +
+  geom_spatvector(
+    data = states,
+    fill = "tomato"
+  ) +
+  theme_pubr() +
+  theme(
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  )
+```
+
+
+### 2.3 Analyze
+
+In the previous chapter we computed zonal statistics for a single layer. However, with the `terra` package and `dplyr` syntax we can calculate zonal statistics for multiple layers, and create a dataset containing daily temperature values for each state for all three years.
+
+```{r}
+states_narr <- data.frame(NULL)
+for (s in seq_along(states$NAME)) {
+  state <- subset(states,
+    subset = states$NAME == states$NAME[s]
+  )
+  state_narr <-
+    narr %>%
+    zonal(state, fun = "mean") %>%
+    t() %>%
+    data.frame()
+  colnames(state_narr) <- "Temperature"
+  state_narr$Name <- paste0(states$NAME[s])
+  state_narr$Date <- as.Date(
+    str_split_i(
+      rownames(state_narr),
+      "_",
+      2
+    ),
+    format = "%Y%m%d"
+  )
+  states_narr <- rbind(states_narr, state_narr)
+}
+```
+
+```{r, echo = FALSE, eval = TRUE, results = FALSE}
+#### TEST CHUNK ####
+test_that("`states_narr` has 3 columns and 3288 rows", {
+  expect_equal(ncol(states_narr), 3)
+  expect_equal(nrow(states_narr), 3288)
+})
+####################
+```
+
+The resulting `states_narr` data frame contains three columns, `$Name`, `$Date`, and `$Temperature`. This format is very useful for plotting and computing summary statistics of the measurement of interest.
+
+For example, we can calculate temperature summary statistics for each state between January 1, 2020 and December 31, 2022 with `doBy::summary_by()`.
+
+```{r}
+doBy::summary_by(
+  data = states_narr,
+  formula = Temperature ~ Name,
+  FUN = c(mean, sd, min, max)
+)
+```
+
+### 2.4 Plot
+
+We can also plot a time-series of the temperature data.
+
+```{r}
+ggplot() +
+  geom_line(
+    data = states_narr,
+    aes(
+      x = Date,
+      y = Temperature,
+      color = Name
+    )
+  ) +
+  ggtitle("Air Temperature (°C) (2020 - 2022)") +
+  theme_pubr(legend = "bottom") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

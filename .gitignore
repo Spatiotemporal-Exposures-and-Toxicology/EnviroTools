@@ -69,6 +69,7 @@ R/Intro-Envr-Spatial_files/
 # all files in R folder EXCEPT .qmd file
 R/*
 !R/Intro-Envr-Spatial.qmd
+!R/env_spatial_vignette_2.qmd
 
 # mac files in /tests/
 tests/._*
